@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>by.nhorushko</groupId>
+  <artifactId>crud-abstract-generic</artifactId>
+  <versioning>
+    <versions>
+      <version>1.0-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20200621072311</lastUpdated>
+  </versioning>
+</metadata>
