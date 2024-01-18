@@ -4,11 +4,11 @@ import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.service.AbsServiceCRUD;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.servlet.http.HttpServletRequest;
 
 //todo Add @Valid annotation to methods with request body
 public abstract class AbsControllerCRUD<

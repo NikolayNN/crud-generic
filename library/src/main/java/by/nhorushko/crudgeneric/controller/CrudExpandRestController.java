@@ -6,9 +6,9 @@ import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.service.CrudExpandGenericService;
 import by.nhorushko.filterspecification.FilterSpecificationAbstract;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
-import javax.servlet.http.HttpServletRequest;
 
 @Deprecated
 public abstract class CrudExpandRestController<

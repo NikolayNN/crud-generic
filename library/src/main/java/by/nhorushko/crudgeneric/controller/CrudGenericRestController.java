@@ -6,11 +6,11 @@ import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.service.CrudGenericService;
 import by.nhorushko.filterspecification.FilterSpecificationAbstract;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.servlet.http.HttpServletRequest;
 
 @Deprecated
 public abstract class CrudGenericRestController<

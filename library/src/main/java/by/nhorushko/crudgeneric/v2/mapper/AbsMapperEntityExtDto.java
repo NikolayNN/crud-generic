@@ -2,10 +2,9 @@ package by.nhorushko.crudgeneric.v2.mapper;
 
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import jakarta.persistence.EntityManager;
 import org.modelmapper.ModelMapper;
 
-import javax.persistence.EntityManager;
-import javax.swing.text.html.parser.Entity;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
