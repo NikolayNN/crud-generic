@@ -3,10 +3,9 @@ package by.nhorushko.crudgenerictest.mapper;
 import by.nhorushko.crudgeneric.v2.mapper.AbsMapperEntityDto;
 import by.nhorushko.crudgenerictest.domain.dto.User;
 import by.nhorushko.crudgenerictest.domain.entity.UserEntity;
+import jakarta.persistence.EntityManager;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
-
-import javax.persistence.EntityManager;
 
 @Component
 public class UserMapper extends AbsMapperEntityDto<UserEntity, User> {

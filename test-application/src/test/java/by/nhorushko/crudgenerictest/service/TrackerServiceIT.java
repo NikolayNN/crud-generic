@@ -3,15 +3,16 @@ package by.nhorushko.crudgenerictest.service;
 import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.Tracker;
 import by.nhorushko.crudgenerictest.domain.entity.TrackerEntity;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,11 +20,10 @@ import static java.lang.Long.MAX_VALUE;
 import static java.lang.Long.MIN_VALUE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class TrackerServiceIT {
 
@@ -35,25 +35,25 @@ public class TrackerServiceIT {
 
     @Test
     public void trackerShouldBeFoundById() {
-        final Optional<Tracker> optionalActual = this.service.getByIdOptional(1L);
+        Optional<Tracker> optionalActual = this.service.getByIdOptional(1L);
         assertTrue(optionalActual.isPresent());
-        final Tracker actual = optionalActual.get();
-        final Tracker expected = new Tracker(1L, "355234055650192", "+37257063997");
+        Tracker actual = optionalActual.get();
+        Tracker expected = new Tracker(1L, "355234055650192", "+37257063997");
         assertEquals(expected, actual);
     }
 
     @Test
     public void trackerShouldNotBeFoundById() {
-        final Optional<Tracker> optionalActual = this.service.getByIdOptional(MAX_VALUE);
+        Optional<Tracker> optionalActual = this.service.getByIdOptional(MAX_VALUE);
         assertTrue(optionalActual.isEmpty());
     }
 
     @Test
     public void trackersShouldBeFoundByIds() {
-        final List<Long> givenIds = List.of(1L, 2L, 3L);
+        List<Long> givenIds = List.of(1L, 2L, 3L);
 
-        final List<Tracker> foundTrackers = this.service.getById(givenIds);
-        final List<Long> actual = foundTrackers.stream()
+        List<Tracker> foundTrackers = this.service.getById(givenIds);
+        List<Long> actual = foundTrackers.stream()
                 .map(Tracker::getId)
                 .collect(toList());
 
@@ -62,67 +62,70 @@ public class TrackerServiceIT {
 
     @Test
     public void trackersShouldNotBeFoundByIds() {
-        final List<Long> givenIds = List.of(111L, 222L, 3333L);
+        List<Long> givenIds = List.of(111L, 222L, 3333L);
 
-        final List<Tracker> foundTrackers = this.service.getById(givenIds);
+        List<Tracker> foundTrackers = this.service.getById(givenIds);
         assertTrue(foundTrackers.isEmpty());
     }
 
     @Test
     public void trackerShouldBeGotById() {
-        final Tracker actual = this.service.getById(1L);
-        final Tracker expected = new Tracker(1L, "355234055650192", "+37257063997");
+        Tracker actual = this.service.getById(1L);
+        Tracker expected = new Tracker(1L, "355234055650192", "+37257063997");
         assertEquals(expected, actual);
     }
 
-    @Test(expected = AppNotFoundException.class)
+    @Test
     public void trackerShouldNotBeGotById() {
-        this.service.getById(MAX_VALUE);
+        assertThrows(AppNotFoundException.class, () -> this.service.getById(MAX_VALUE));
     }
 
     @Test
     public void trackerWithGivenIdShouldExist() {
-        final Long givenId = 3L;
+        Long givenId = 3L;
         assertTrue(this.service.isExist(givenId));
     }
 
     @Test
     public void trackerWithGivenIdShouldNotExist() {
-        final Long givenId = MIN_VALUE;
+        Long givenId = MIN_VALUE;
         assertFalse(this.service.isExist(givenId));
     }
 
     @Test
     public void trackerShouldBeUpdated() {
-        final Tracker givenTrackerToUpdate = new Tracker(1L, "3550260722834532", "37257591222");
+        Tracker givenTrackerToUpdate = new Tracker(1L, "3550260722834532", "37257591222");
         this.service.update(givenTrackerToUpdate);
 
-        final TrackerEntity updatedTracker = findTrackerFromDB(givenTrackerToUpdate.getId());
+        TrackerEntity updatedTracker = findTrackerFromDB(givenTrackerToUpdate.getId());
         assertEquals("3550260722834532", updatedTracker.getImei());
         assertEquals("37257591222", updatedTracker.getPhoneNumber());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void trackerShouldNotBeUpdatedBecauseOfIdIsNull() {
-        final Tracker givenTrackerToUpdate = new Tracker(null, "3550260722834532", "37257591222");
-        this.service.update(givenTrackerToUpdate);
+        Tracker givenTrackerToUpdate = new Tracker(null, "3550260722834532", "37257591222");
+        assertThrows(IllegalArgumentException.class, () -> this.service.update(givenTrackerToUpdate));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void trackerShouldNotBeUpdatedBecauseOfIdIsZero() {
-        final Tracker givenTrackerToUpdate = new Tracker(0L, "3550260722834532", "37257591222");
-        this.service.update(givenTrackerToUpdate);
+        Tracker givenTrackerToUpdate = new Tracker(0L, "3550260722834532", "37257591222");
+        assertThrows(IllegalArgumentException.class, () -> {
+            this.service.update(givenTrackerToUpdate);
+        });
+
     }
 
     @Test
     public void trackerShouldBePartialUpdated() {
-        final Long givenTrackerId = 1L;
+        Long givenTrackerId = 1L;
 
-        final TrackerImei trackerImei = new TrackerImei("12345678912345678912");
+        TrackerImei trackerImei = new TrackerImei("12345678912345678912");
 
         this.service.updatePartial(givenTrackerId, trackerImei);
 
-        final TrackerEntity updatedTracker = findTrackerFromDB(givenTrackerId);
+        TrackerEntity updatedTracker = findTrackerFromDB(givenTrackerId);
         entityManager.flush();
         entityManager.refresh(updatedTracker);
         assertEquals(trackerImei.getImei(), updatedTracker.getImei());
@@ -130,7 +133,7 @@ public class TrackerServiceIT {
 
     @Test
     public void trackerShouldBeDeletedById() {
-        final Long givenTrackerId = 1L;
+        Long givenTrackerId = 1L;
 
         this.service.delete(givenTrackerId);
 
@@ -139,26 +142,26 @@ public class TrackerServiceIT {
 
     @Test
     public void trackerShouldBeSaved() {
-        final Tracker givenTracker = new Tracker(null, "355234055650192", "+3197011460885");
+        Tracker givenTracker = new Tracker(null, "355234055650192", "+3197011460885");
 
-        final Tracker savedTracker = this.service.save(givenTracker);
+        Tracker savedTracker = this.service.save(givenTracker);
         assertNotNull(savedTracker.getId());
 
-        final TrackerEntity savedTrackedFromDB = findTrackerFromDB(savedTracker.getId());
+        TrackerEntity savedTrackedFromDB = findTrackerFromDB(savedTracker.getId());
         assertEquals(givenTracker.getImei(), savedTrackedFromDB.getImei());
         assertEquals(givenTracker.getPhoneNumber(), savedTrackedFromDB.getPhoneNumber());
     }
 
     @Test
     public void trackersShouldBeSaved() {
-        final List<Tracker> givenTrackers = List.of(
+        List<Tracker> givenTrackers = List.of(
                 new Tracker(null, "355234055650192", "+3197011460885"),
                 new Tracker(null, "355026070834532", "+3197011405848"));
 
-        final List<Tracker> savedTrackers = this.service.saveAll(givenTrackers);
+        List<Tracker> savedTrackers = this.service.saveAll(givenTrackers);
         assertTrue(savedTrackers.stream().allMatch(tracker -> tracker.getId() != null));
 
-        final List<TrackerEntity> savedTrackersFromDB = savedTrackers
+        List<TrackerEntity> savedTrackersFromDB = savedTrackers
                 .stream()
                 .map(savedTracker -> findTrackerFromDB(savedTracker.getId()))
                 .collect(toList());
@@ -171,7 +174,7 @@ public class TrackerServiceIT {
     }
 
     private static class TrackerImei {
-        private final String imei;
+        private String imei;
 
         TrackerImei(String imei) {
             this.imei = imei;

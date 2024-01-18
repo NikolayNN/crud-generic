@@ -1,13 +1,12 @@
 package by.nhorushko.crudgenerictest.domain.entity;
 
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import org.antlr.v4.runtime.misc.NotNull;
 
 @Entity
 @Data

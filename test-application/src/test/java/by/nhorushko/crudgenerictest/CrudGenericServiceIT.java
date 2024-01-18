@@ -4,23 +4,23 @@ import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.MockADescription;
 import by.nhorushko.crudgenerictest.domain.dto.MockADto;
 import by.nhorushko.crudgenerictest.domain.entity.MockAEntity;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @SpringBootTest
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 public class CrudGenericServiceIT {
 
     @Autowired
@@ -28,9 +28,6 @@ public class CrudGenericServiceIT {
 
     @Autowired
     private EntityManager entityManager;
-
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
 
     @Test
     @Sql(value = {"classpath:add-entities-before.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -91,9 +88,11 @@ public class CrudGenericServiceIT {
     @Sql(value = {"classpath:add-entities-before.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @Sql(value = {"classpath:add-entities-after.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     public void getByIdTest_ShouldThrowNotFoundException() {
-        exceptionRule.expect(AppNotFoundException.class);
-        exceptionRule.expectMessage("9999 was not found");
-        mockService.getById(9999L);
+        Exception exception = assertThrows(AppNotFoundException.class, () -> {
+            mockService.getById(9999L);
+        });
+
+        assertEquals("9999 was not found", exception.getMessage());
     }
 
     @Test
@@ -178,9 +177,10 @@ public class CrudGenericServiceIT {
     @Sql(value = {"classpath:add-entities-before.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @Sql(value = {"classpath:add-entities-after.sql"}, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     public void deleteByIdTest_ShouldThrowAppNotFoundException() {
-        exceptionRule.expect(AppNotFoundException.class);
-        exceptionRule.expectMessage("9999 was not found");
-        mockService.deleteById(9999L);
+        Exception exception = assertThrows(AppNotFoundException.class, () -> {
+            mockService.deleteById(9999L);
+        });
+        assertEquals("9999 was not found", exception.getMessage());
     }
 
     @Test

@@ -4,11 +4,9 @@ import by.nhorushko.crudgeneric.v2.mapper.AbsMapperEntityExtDto;
 import by.nhorushko.crudgenerictest.domain.dto.Driver;
 import by.nhorushko.crudgenerictest.domain.entity.DriverEntity;
 import by.nhorushko.crudgenerictest.domain.entity.UserEntity;
+import jakarta.persistence.EntityManager;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
-
-import javax.persistence.EntityManager;
-import javax.swing.text.html.parser.Entity;
 
 @Component
 public class DriverMapper extends AbsMapperEntityExtDto<DriverEntity, Driver, Long, UserEntity> {
