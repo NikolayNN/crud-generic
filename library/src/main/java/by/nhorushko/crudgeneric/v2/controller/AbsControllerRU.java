@@ -4,6 +4,7 @@ import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.service.AbsServiceRUD;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,7 +25,7 @@ public abstract class AbsControllerRU<
     @PutMapping("{id}")
     public ResponseEntity<DTO_VIEW> update(@PathVariable("id") ID id,
                                            SETTINGS settings,
-                                           @RequestBody DTO obj,
+                                           @RequestBody @Valid DTO obj,
                                            HttpServletRequest request) {
         if (!id.equals(obj.getId())) {
             throw new IllegalArgumentException("wrong id");

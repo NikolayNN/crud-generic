@@ -5,6 +5,7 @@ import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.service.AbsServiceCRUD;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,7 +25,7 @@ public abstract class AbsControllerCRUD<
     }
 
     @PostMapping
-    public ResponseEntity<DTO_VIEW> save(@RequestBody DTO obj,
+    public ResponseEntity<DTO_VIEW> save(@RequestBody @Valid DTO obj,
                                          SETTINGS settings,
                                          HttpServletRequest request) {
         checkAccessSaveBefore(obj, request);
