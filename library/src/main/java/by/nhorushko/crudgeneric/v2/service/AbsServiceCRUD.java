@@ -23,11 +23,33 @@ public abstract class AbsServiceCRUD<
 
     public DTO save(DTO dto) {
         ENTITY entity = repository.save(mapper.toEntity(dto));
-        return mapper.toDto(entity);
+        DTO saved = mapper.toDto(entity);
+        afterSaveHook(saved);
+        return saved;
     }
 
     public List<DTO> saveAll(Collection<DTO> dto) {
         List<ENTITY> entities = repository.saveAll(mapper.toEntities(dto));
-        return mapper.toDtos(entities);
+        List<DTO> saved = mapper.toDtos(entities);
+        saved.forEach(this::afterSaveHook);
+        return saved;
+    }
+
+    /**
+     * Hook method that is called after saving each DTO.
+     * <p>
+     * This method provides a way to insert additional processing
+     * after an entity is saved and converted back to its DTO form.
+     * Subclasses can override this method to implement specific behaviors
+     * such as event publishing or custom logging.
+     * </p>
+     * <p>
+     * By default, this method does nothing and is intended to be overridden.
+     * </p>
+     *
+     * @param dto The DTO object that has been saved.
+     */
+    protected void afterSaveHook(DTO dto) {
+        // Default implementation does nothing, intended for override.
     }
 }

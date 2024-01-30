@@ -5,8 +5,7 @@ import by.nhorushko.crudgeneric.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.mapper.AbstractMapper;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-
-import javax.annotation.Nullable;
+import org.springframework.lang.Nullable;
 
 @Deprecated
 public abstract class CrudExpandGenericService<

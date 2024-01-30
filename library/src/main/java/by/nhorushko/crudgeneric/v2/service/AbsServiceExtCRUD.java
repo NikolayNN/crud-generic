@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- *
  * Read Update Delete Create Service
  */
 public abstract class AbsServiceExtCRUD<
@@ -30,7 +29,9 @@ public abstract class AbsServiceExtCRUD<
     public DTO save(EXT_ID relationId, DTO dto) {
         if (dto.isNew()) {
             ENTITY entity = repository.save(mapper.toEntity(relationId, dto));
-            return mapper.toDto(entity);
+            DTO saved = mapper.toDto(entity);
+            afterSaveHook(relationId, saved);
+            return saved;
         }
         throw new IllegalArgumentException(wrongIdMessage(dto.getId()));
     }
@@ -41,10 +42,30 @@ public abstract class AbsServiceExtCRUD<
             if (!e.isNew()) throw new IllegalArgumentException(wrongIdMessage(e.getId()));
         });
         entities = repository.saveAll(mapper.toEntities(relationId, dtos));
-        return mapper.toDtos(entities);
+        List<DTO> saved = mapper.toDtos(entities);
+        saved.forEach(s -> afterSaveHook(relationId, s));
+        return saved;
     }
 
     private String wrongIdMessage(ENTITY_ID id) {
         return String.format("wrong id: %s to save new entity id should be null", id);
+    }
+
+    /**
+     * Hook method that is called after saving each DTO.
+     * <p>
+     * This method provides a way to insert additional processing
+     * after an entity is saved and converted back to its DTO form.
+     * Subclasses can override this method to implement specific behaviors
+     * such as event publishing or custom logging.
+     * </p>
+     * <p>
+     * By default, this method does nothing and is intended to be overridden.
+     * </p>
+     *
+     * @param dto The DTO object that has been saved.
+     */
+    protected void afterSaveHook(EXT_ID relationId, DTO dto) {
+        // Default implementation does nothing, intended for override.
     }
 }
