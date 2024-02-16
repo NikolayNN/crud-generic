@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.v2.pageable;
 
+import by.nhorushko.crudgeneric.v2.controller.BasePageRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -54,12 +55,24 @@ public class PageFilterRequest {
                 condition);
     }
 
+    public static PageFilterRequest pageRequest(BasePageRequest pageRequest, FilterGroup group) {
+        return pageRequest(pageRequest.getPage(), pageRequest.getSize(), pageRequest.getSort(), group);
+    }
+
     public static PageFilterRequest pageRequest(int page, int pageSize, String sort, FilterGroup group) {
         return new PageFilterRequest(page, pageSize, sort, group);
     }
 
+    public static PageFilterRequest pageRequestOr(BasePageRequest pageRequest, Filter... filters) {
+        return pageRequestOr(pageRequest.getPage(), pageRequest.getSize(), pageRequest.getSort(), filters);
+    }
+
     public static PageFilterRequest pageRequestOr(int page, int pageSize, String sort, Filter... filters) {
         return new PageFilterRequest(page, pageSize, sort, ConcatCondition.OR, filters);
+    }
+
+    public static PageFilterRequest pageRequestAnd(BasePageRequest pageRequest, Filter... filters) {
+        return pageRequestAnd(pageRequest.getPage(), pageRequest.getSize(), pageRequest.getSort(), filters);
     }
 
     public static PageFilterRequest pageRequestAnd(int page, int pageSize, String sort, Filter... filters) {
