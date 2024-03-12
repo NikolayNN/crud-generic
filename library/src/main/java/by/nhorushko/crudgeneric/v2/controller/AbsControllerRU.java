@@ -3,6 +3,7 @@ package by.nhorushko.crudgeneric.v2.controller;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.service.AbsServiceRUD;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,6 +24,7 @@ public abstract class AbsControllerRU<
     }
 
     @PutMapping("{id}")
+    @Operation(summary = "Update")
     public ResponseEntity<DTO_VIEW> update(@PathVariable("id") ID id,
                                            SETTINGS settings,
                                            @RequestBody DTO obj,
