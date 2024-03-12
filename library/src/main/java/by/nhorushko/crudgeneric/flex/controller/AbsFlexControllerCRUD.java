@@ -1,16 +1,16 @@
-package by.nhorushko.crudgeneric.v2.core.controller;
+package by.nhorushko.crudgeneric.flex.controller;
 
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
-import by.nhorushko.crudgeneric.v2.core.service.AbsFlexServiceCRUD;
+import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceCRUD;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
-//todo Add @Valid annotation to methods with request body
 public abstract class AbsFlexControllerCRUD<
         ID,
         READ_DTO extends AbstractDto<ID>,
@@ -26,7 +26,7 @@ public abstract class AbsFlexControllerCRUD<
     }
 
     @PostMapping
-    public ResponseEntity<DTO_VIEW> save(@RequestBody CREATE_DTO obj,
+    public ResponseEntity<DTO_VIEW> save(@Valid @RequestBody CREATE_DTO obj,
                                          SETTINGS settings,
                                          HttpServletRequest request) {
         checkAccessSaveBefore(obj, request);

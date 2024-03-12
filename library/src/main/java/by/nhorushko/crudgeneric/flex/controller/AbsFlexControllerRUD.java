@@ -1,7 +1,7 @@
-package by.nhorushko.crudgeneric.v2.core.controller;
+package by.nhorushko.crudgeneric.flex.controller;
 
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
-import by.nhorushko.crudgeneric.v2.core.service.AbsFlexServiceRUD;
+import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,7 +15,7 @@ public abstract class AbsFlexControllerRUD<
         DTO_VIEW extends READ_DTO,
         UPDATE_DTO extends AbstractDto<ID>,
         SETTINGS extends SettingsVoid,
-        SERVICE extends AbsFlexServiceRUD<ID, ?, READ_DTO, ?, UPDATE_DTO, ?>>
+        SERVICE extends AbsFlexServiceRUD<ID, ?, READ_DTO, UPDATE_DTO, ?>>
         extends AbsFlexControllerRU<ID, READ_DTO, DTO_VIEW, UPDATE_DTO, SETTINGS, SERVICE> {
 
     public AbsFlexControllerRUD(SERVICE service) {

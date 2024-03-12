@@ -1,8 +1,7 @@
-package by.nhorushko.crudgeneric.v2.core.controller;
+package by.nhorushko.crudgeneric.flex.controller;
 
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
-import by.nhorushko.crudgeneric.v2.controller.AbsControllerR;
-import by.nhorushko.crudgeneric.v2.core.service.AbsFlexServiceRUD;
+import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 public abstract class AbsFlexControllerRU<
         ID,
@@ -17,8 +17,8 @@ public abstract class AbsFlexControllerRU<
         READ_DTO_VIEW extends READ_DTO,
         UPDATE_DTO extends AbstractDto<ID>,
         SETTINGS extends SettingsVoid,
-        SERVICE extends AbsFlexServiceRUD<ID, ?, READ_DTO, ?, UPDATE_DTO, ?>>
-        extends AbsControllerR<ID, READ_DTO, READ_DTO_VIEW, SETTINGS, SERVICE> {
+        SERVICE extends AbsFlexServiceRUD<ID, ?, READ_DTO, UPDATE_DTO, ?>>
+        extends AbsFlexControllerR<ID, READ_DTO, READ_DTO_VIEW, SETTINGS, SERVICE> {
 
     public AbsFlexControllerRU(SERVICE service) {
         super(service);
@@ -27,7 +27,7 @@ public abstract class AbsFlexControllerRU<
     @PutMapping("{id}")
     public ResponseEntity<READ_DTO_VIEW> update(@PathVariable("id") ID id,
                                                 SETTINGS settings,
-                                                @RequestBody UPDATE_DTO obj,
+                                                @Valid @RequestBody UPDATE_DTO obj,
                                                 HttpServletRequest request) {
         if (!id.equals(obj.getId())) {
             throw new IllegalArgumentException("wrong id");

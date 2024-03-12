@@ -1,13 +1,14 @@
-package by.nhorushko.crudgeneric.v2.core.service;
+package by.nhorushko.crudgeneric.flex.service;
 
 import by.nhorushko.crudgeneric.util.FieldCopyUtil;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.v2.domain.IdEntity;
-import by.nhorushko.crudgeneric.v2.mapper.AbsMapperEntityDto;
-import by.nhorushko.crudgeneric.v2.service.AbsServiceR;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -19,17 +20,16 @@ public abstract class AbsFlexServiceRUD<
         ENTITY_ID,
         ENTITY extends AbstractEntity<ENTITY_ID>,
         READ_DTO extends AbstractDto<ENTITY_ID>,
-        READ_DTO_MAPPER extends AbsMapperEntityDto<ENTITY, READ_DTO>,
         UPDATE_DTO extends AbstractDto<ENTITY_ID>,
         REPOSITORY extends JpaRepository<ENTITY, ENTITY_ID>>
-        extends AbsServiceR<ENTITY_ID, ENTITY, READ_DTO, READ_DTO_MAPPER, REPOSITORY> {
+        extends AbsFlexServiceR<ENTITY_ID, ENTITY, READ_DTO, REPOSITORY> {
 
     protected final Class<ENTITY> entityClass;
 
     protected Set<String> IGNORE_PARTIAL_UPDATE_PROPERTIES = Set.of("id");
 
-    public AbsFlexServiceRUD(READ_DTO_MAPPER mapper, REPOSITORY repository, Class<ENTITY> entityClass) {
-        super(mapper, repository);
+    public AbsFlexServiceRUD(AbsModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
+        super(mapper, repository, entityClass, readDtoClass);
         this.entityClass = entityClass;
     }
 
@@ -44,19 +44,14 @@ public abstract class AbsFlexServiceRUD<
 
     private READ_DTO runUpdate(AbstractDto<ENTITY_ID> dto) {
         checkId(dto);
-        ENTITY prevValue = repository.getOne(dto.getId());
-        ENTITY newValue = mapper.map(dto, entityClass);
-        preUpdate(prevValue, newValue);
+        ENTITY newValue = mapEntity(dto);
         ENTITY actual = repository.save(newValue);
-        return mapper.toDto(actual);
+        READ_DTO actualDto = mapReadDto(actual);
+        afterUpdateHook(actualDto);
+        return actualDto;
     }
 
-    /**
-     * Здесь можно внести изменения в newValue, на основании предыдущего значения
-     * @param prevValue
-     * @param newValue
-     */
-    protected void preUpdate(ENTITY prevValue, ENTITY newValue) {
+    protected void afterUpdateHook(READ_DTO dto) {
 
     }
 
@@ -75,5 +70,13 @@ public abstract class AbsFlexServiceRUD<
 
     public void delete(ENTITY_ID id) {
         repository.deleteById(id);
+    }
+
+    protected ENTITY mapEntity(Object obj) {
+        return this.mapper.map(obj, entityClass);
+    }
+
+    protected List<ENTITY> mapAllEntities(Collection<?> obj) {
+        return this.mapper.mapAll(obj, entityClass);
     }
 }
