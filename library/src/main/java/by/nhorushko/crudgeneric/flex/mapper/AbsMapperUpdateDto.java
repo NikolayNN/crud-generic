@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex.mapper;
 
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import by.nhorushko.crudgeneric.v2.domain.AbstractUpdateDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import by.nhorushko.crudgeneric.v2.mapper.AbsMapperEntityDto;
 import org.modelmapper.ModelMapper;
 

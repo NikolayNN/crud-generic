@@ -3,9 +3,9 @@ package by.nhorushko.crudgeneric.flex.controller;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceExtCRUD;
-import by.nhorushko.crudgeneric.v2.domain.AbstractCreateDto;
+import by.nhorushko.crudgeneric.flex.mapper.AbstractCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractUpdateDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletRequest;

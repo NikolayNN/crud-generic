@@ -1,6 +1,8 @@
 package by.nhorushko.crudgeneric.flex.service;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.mapper.AbstractCreateDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 

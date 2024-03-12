@@ -1,11 +1,9 @@
 package by.nhorushko.crudgeneric.v2.mapper;
 
-import by.nhorushko.crudgeneric.v2.domain.AbstractBaseDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.AbstractCondition;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeMap;
 import org.modelmapper.spi.MappingContext;
 
 import java.util.Collection;

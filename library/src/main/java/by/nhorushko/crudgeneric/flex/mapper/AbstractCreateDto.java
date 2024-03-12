@@ -1,4 +1,6 @@
-package by.nhorushko.crudgeneric.v2.domain;
+package by.nhorushko.crudgeneric.flex.mapper;
+
+import by.nhorushko.crudgeneric.flex.model.AbstractBaseDto;
 
 /**
  * Помечть DTO предназначеные для создания новой сущности
