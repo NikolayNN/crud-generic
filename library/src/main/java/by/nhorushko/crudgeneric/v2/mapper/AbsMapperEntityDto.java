@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.v2.mapper;
 
+import by.nhorushko.crudgeneric.v2.domain.AbstractBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.Converter;
@@ -9,7 +10,7 @@ import javax.persistence.EntityManager;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class AbsMapperEntityDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>>
+public abstract class AbsMapperEntityDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractBaseDto>
         extends AbsMapperDto<ENTITY, DTO> {
 
     protected final EntityManager entityManager;
@@ -47,8 +48,8 @@ public abstract class AbsMapperEntityDto<ENTITY extends AbstractEntity<?>, DTO e
             DTO source = context.getSource();
             ENTITY destination = context.getDestination();
             mapSpecificFields(source, destination);
-            if (!source.isNew()) {
-                ENTITY beforeEntity = entityManager.getReference(entityClass, source.getId());
+            if (source instanceof AbstractDto && !((AbstractDto<?>)source).isNew()) {
+                ENTITY beforeEntity = entityManager.getReference(entityClass, ((AbstractDto<?>)source).getId());
                 mapSpecificFields(source, beforeEntity, destination);
             }
             return destination;

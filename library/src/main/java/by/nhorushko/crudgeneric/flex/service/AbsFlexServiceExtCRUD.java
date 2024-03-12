@@ -1,8 +1,10 @@
 package by.nhorushko.crudgeneric.flex.service;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.v2.domain.AbstractCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.v2.domain.AbstractUpdateDto;
 import by.nhorushko.crudgeneric.v2.mapper.AbsMapperEntityExtDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -16,8 +18,8 @@ public abstract class AbsFlexServiceExtCRUD<
         ENTITY_ID,
         ENTITY extends AbstractEntity<ENTITY_ID>,
         READ_DTO extends AbstractDto<ENTITY_ID>,
-        UPDATE_DTO extends AbstractDto<ENTITY_ID>,
-        CREATE_DTO extends AbstractDto<ENTITY_ID>,
+        UPDATE_DTO extends AbstractUpdateDto<ENTITY_ID>,
+        CREATE_DTO extends AbstractCreateDto,
         EXT_ID,
         EXT extends AbstractEntity<EXT_ID>,
         REPOSITORY extends JpaRepository<ENTITY, ENTITY_ID>>
@@ -35,14 +37,11 @@ public abstract class AbsFlexServiceExtCRUD<
     }
 
     public READ_DTO save(EXT_ID relationId, CREATE_DTO dto) {
-        if (dto.isNew()) {
             beforeSaveHook(relationId, dto);
             ENTITY entity = repository.save(extCreateMapper.toEntity(relationId, dto));
             READ_DTO actual = mapReadDto(entity);
             afterSaveHook(relationId, actual);
             return actual;
-        }
-        throw new IllegalArgumentException(wrongIdMessage(dto.getId()));
     }
 
     protected void beforeSaveHook(EXT_ID relationId, CREATE_DTO dto) {

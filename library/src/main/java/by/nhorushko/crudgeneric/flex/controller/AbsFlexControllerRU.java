@@ -3,6 +3,7 @@ package by.nhorushko.crudgeneric.flex.controller;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.v2.domain.AbstractUpdateDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -15,7 +16,7 @@ public abstract class AbsFlexControllerRU<
         ID,
         READ_DTO extends AbstractDto<ID>,
         READ_DTO_VIEW extends READ_DTO,
-        UPDATE_DTO extends AbstractDto<ID>,
+        UPDATE_DTO extends AbstractUpdateDto<ID>,
         SETTINGS extends SettingsVoid,
         SERVICE extends AbsFlexServiceRUD<ID, ?, READ_DTO, UPDATE_DTO, ?>>
         extends AbsFlexControllerR<ID, READ_DTO, READ_DTO_VIEW, SETTINGS, SERVICE> {

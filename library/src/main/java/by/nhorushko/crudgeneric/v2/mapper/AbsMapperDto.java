@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.v2.mapper;
 
+import by.nhorushko.crudgeneric.v2.domain.AbstractBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.AbstractCondition;
@@ -10,7 +11,7 @@ import org.modelmapper.spi.MappingContext;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class AbsMapperDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>>
+public abstract class AbsMapperDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractBaseDto>
         extends AbsMapperBase<ENTITY, DTO> {
 
     public AbsMapperDto(ModelMapper modelMapper, Class<ENTITY> entityClass, Class<DTO> dtoClass) {

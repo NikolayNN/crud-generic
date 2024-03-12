@@ -3,7 +3,9 @@ package by.nhorushko.crudgeneric.flex.controller;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceCRUD;
+import by.nhorushko.crudgeneric.v2.domain.AbstractCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.v2.domain.AbstractUpdateDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,8 +17,8 @@ public abstract class AbsFlexControllerCRUD<
         ID,
         READ_DTO extends AbstractDto<ID>,
         DTO_VIEW extends READ_DTO,
-        UPDATE_DTO extends AbstractDto<ID>,
-        CREATE_DTO extends AbstractDto<ID>,
+        UPDATE_DTO extends AbstractUpdateDto<ID>,
+        CREATE_DTO extends AbstractCreateDto,
         SETTINGS extends SettingsVoid,
         SERVICE extends AbsFlexServiceCRUD<ID, ?, READ_DTO, UPDATE_DTO, CREATE_DTO, ?>>
         extends AbsFlexControllerRUD<ID, READ_DTO, DTO_VIEW, UPDATE_DTO, SETTINGS, SERVICE> {

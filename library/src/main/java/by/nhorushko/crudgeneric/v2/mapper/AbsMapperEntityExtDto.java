@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.v2.mapper;
 
+import by.nhorushko.crudgeneric.v2.domain.AbstractBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.ModelMapper;
@@ -10,8 +11,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class AbsMapperEntityExtDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>, EXT_ID,
+public abstract class AbsMapperEntityExtDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractBaseDto, EXT_ID,
         EXT extends AbstractEntity<EXT_ID>>
+
         extends AbsMapperEntityDto<ENTITY, DTO> {
     protected final Class<EXT> extClass;
 
