@@ -52,14 +52,17 @@ public abstract class AbsFlexServiceRUD<
     private READ_DTO runUpdate(AbstractDto<ENTITY_ID> dto) {
         checkId(dto);
         ENTITY newValue = mapEntity(dto);
+        beforeUpdateHook(newValue);
         ENTITY actual = repository.save(newValue);
         READ_DTO actualDto = mapReadDto(actual);
         afterUpdateHook(actualDto);
         return actualDto;
     }
 
-    protected void afterUpdateHook(READ_DTO dto) {
+    private void beforeUpdateHook(ENTITY newValue) {
+    }
 
+    protected void afterUpdateHook(READ_DTO dto) {
     }
 
     private void checkId(IdEntity<ENTITY_ID> entity) {
