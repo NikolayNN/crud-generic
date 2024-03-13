@@ -56,7 +56,7 @@ public class CrudAbstractGenericMappingChecker implements SmartLifecycle {
                 checkTypeMap(createDtoClass, entityClass);
             }
             if (service instanceof AbsFlexServiceExtCRUD) {
-                Class<?> createDtoClass = ((AbsFlexServiceExtCRUD<?, ?, ?, ?, ?, ?, ?, ?>) service).getCreateDtoClass()
+                Class<?> createDtoClass = ((AbsFlexServiceExtCRUD<?, ?, ?, ?, ?, ?, ?, ?>) service).getCreateDtoClass();
                 checkTypeMap(createDtoClass, entityClass);
             }
         }
