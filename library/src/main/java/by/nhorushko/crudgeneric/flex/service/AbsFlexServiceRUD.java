@@ -6,6 +6,7 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.IdEntity;
+import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import javax.annotation.PostConstruct;
@@ -18,6 +19,7 @@ import static java.lang.String.format;
 /**
  * Read Update Delete service
  */
+@FieldNameConstants
 public abstract class AbsFlexServiceRUD<
         ENTITY_ID,
         ENTITY extends AbstractEntity<ENTITY_ID>,
@@ -28,11 +30,6 @@ public abstract class AbsFlexServiceRUD<
     protected Set<String> IGNORE_PARTIAL_UPDATE_PROPERTIES = Set.of("id");
 
     protected Class<UPDATE_DTO> updateDtoClass;
-
-    @PostConstruct
-    private void checkTypeMap() {
-        checkTypeMap(updateDtoClass, entityClass);
-    }
 
     public AbsFlexServiceRUD(AbsDtoModelMapper mapper, REPOSITORY repository,
                              Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass) {

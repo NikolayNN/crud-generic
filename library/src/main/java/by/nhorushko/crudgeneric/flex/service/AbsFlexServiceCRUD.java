@@ -4,12 +4,14 @@ import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.*;
+import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 
+@FieldNameConstants
 public abstract class AbsFlexServiceCRUD<
         ENTITY_ID,
         ENTITY extends AbstractEntity<ENTITY_ID>,
@@ -20,11 +22,6 @@ public abstract class AbsFlexServiceCRUD<
         extends AbsFlexServiceRUD<ENTITY_ID, ENTITY, READ_DTO, UPDATE_DTO, REPOSITORY> {
 
     protected Class<CREATE_DTO> createDtoClass;
-
-    @PostConstruct
-    private void checkTypeMap() {
-        checkTypeMap(createDtoClass, entityClass);
-    }
 
     public AbsFlexServiceCRUD(AbsDtoModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<CREATE_DTO> createDtoClass) {
         super(mapper, repository, entityClass, readDtoClass, updateDtoClass);
