@@ -4,7 +4,7 @@ import by.nhorushko.crudgeneric.util.FieldCopyUtil;
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
+import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.IdEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -22,7 +22,7 @@ public abstract class AbsFlexServiceRUD<
         ENTITY_ID,
         ENTITY extends AbstractEntity<ENTITY_ID>,
         READ_DTO extends AbstractDto<ENTITY_ID>,
-        UPDATE_DTO extends AbstractUpdateDto<ENTITY_ID>,
+        UPDATE_DTO extends AbsUpdateDto<ENTITY_ID>,
         REPOSITORY extends JpaRepository<ENTITY, ENTITY_ID>>
         extends AbsFlexServiceR<ENTITY_ID, ENTITY, READ_DTO, REPOSITORY> {
     protected Set<String> IGNORE_PARTIAL_UPDATE_PROPERTIES = Set.of("id");

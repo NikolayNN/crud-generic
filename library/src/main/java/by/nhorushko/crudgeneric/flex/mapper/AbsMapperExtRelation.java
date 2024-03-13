@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex.mapper;
 
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
-import by.nhorushko.crudgeneric.flex.model.AbstractCreateDto;
+import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class AbsMapperExtRelation<DTO extends AbstractCreateDto, ENTITY, EXT_ID, EXT extends AbstractEntity<?>> {
+public abstract class AbsMapperExtRelation<DTO extends AbsCreateDto, ENTITY, EXT_ID, EXT extends AbstractEntity<?>> {
 
     private final AbsDtoModelMapper mapper;
     private final Class<ENTITY> entityClass;

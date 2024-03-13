@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.v2.mapper;
 
-import by.nhorushko.crudgeneric.flex.model.AbstractBaseDto;
+import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.Converter;
@@ -10,7 +10,7 @@ import javax.persistence.EntityManager;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class AbsMapperEntityDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractBaseDto>
+public abstract class AbsMapperEntityDto<ENTITY extends AbstractEntity<?>, DTO extends AbsBaseDto>
         extends AbsMapperDto<ENTITY, DTO> {
 
     protected final EntityManager entityManager;
