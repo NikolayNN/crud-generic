@@ -8,9 +8,9 @@ import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.IdEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -25,14 +25,19 @@ public abstract class AbsFlexServiceRUD<
         UPDATE_DTO extends AbstractUpdateDto<ENTITY_ID>,
         REPOSITORY extends JpaRepository<ENTITY, ENTITY_ID>>
         extends AbsFlexServiceR<ENTITY_ID, ENTITY, READ_DTO, REPOSITORY> {
-
-    protected final Class<ENTITY> entityClass;
-
     protected Set<String> IGNORE_PARTIAL_UPDATE_PROPERTIES = Set.of("id");
 
-    public AbsFlexServiceRUD(AbsDtoModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
+    protected Class<UPDATE_DTO> updateDtoClass;
+
+    @PostConstruct
+    private void checkTypeMap() {
+        checkTypeMap(updateDtoClass, entityClass);
+    }
+
+    public AbsFlexServiceRUD(AbsDtoModelMapper mapper, REPOSITORY repository,
+                             Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass) {
         super(mapper, repository, entityClass, readDtoClass);
-        this.entityClass = entityClass;
+        this.updateDtoClass = updateDtoClass;
     }
 
     public READ_DTO update(UPDATE_DTO dto) {

@@ -7,6 +7,7 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,19 @@ public abstract class AbsFlexServiceR<
     protected final REPOSITORY repository;
     protected final Class<ENTITY> entityClass;
     protected final Class<READ_DTO> readDtoClass;
+
+    @PostConstruct
+    private void checkTypeMap() {
+        checkTypeMap(entityClass, readDtoClass);
+        checkTypeMap(readDtoClass, entityClass);
+    }
+
+    protected void checkTypeMap(Class<?> sourceType, Class<?> destinationType) {
+        var typeMap = mapper.getModelMapper().getTypeMap(sourceType, destinationType);
+        if (typeMap == null) {
+            throw new UnsupportedOperationException(String.format("TypeMap for mapping %s -> %s is not exists", sourceType.getSimpleName(), destinationType.getSimpleName()));
+        }
+    }
 
     public AbsFlexServiceR(AbsDtoModelMapper mapper,
                            REPOSITORY repository,

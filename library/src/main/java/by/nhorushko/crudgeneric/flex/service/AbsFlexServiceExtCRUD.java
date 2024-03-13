@@ -8,6 +8,7 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 
@@ -26,13 +27,23 @@ public abstract class AbsFlexServiceExtCRUD<
         extends AbsFlexServiceRUD<ENTITY_ID, ENTITY, READ_DTO, UPDATE_DTO, REPOSITORY> {
     protected final AbsMapperExtRelation<CREATE_DTO, ENTITY, EXT_ID, EXT> extMapper;
 
+    protected final Class<CREATE_DTO> createDtoClass;
+
+    @PostConstruct
+    private void checkTypeMap() {
+        checkTypeMap(createDtoClass, entityClass);
+    }
+
     public AbsFlexServiceExtCRUD(AbsDtoModelMapper mapper,
                                  REPOSITORY repository,
                                  Class<ENTITY> entityClass,
                                  Class<READ_DTO> readDtoClass,
+                                 Class<UPDATE_DTO> updateDtoClass,
+                                 Class<CREATE_DTO> createDtoClass,
                                  AbsMapperExtRelation<CREATE_DTO, ENTITY, EXT_ID, EXT> extMapper) {
-        super(mapper, repository, entityClass, readDtoClass);
+        super(mapper, repository, entityClass, readDtoClass, updateDtoClass);
         this.extMapper = extMapper;
+        this.createDtoClass = createDtoClass;
     }
 
     public READ_DTO save(EXT_ID relationId, CREATE_DTO dto) {
