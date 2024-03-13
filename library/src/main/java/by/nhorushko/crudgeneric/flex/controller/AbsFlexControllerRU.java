@@ -15,7 +15,7 @@ import javax.validation.Valid;
 public abstract class AbsFlexControllerRU<
         ID,
         READ_DTO extends AbstractDto<ID>,
-        READ_DTO_VIEW extends READ_DTO,
+        READ_DTO_VIEW,
         UPDATE_DTO extends AbsUpdateDto<ID>,
         SETTINGS extends SettingsVoid,
         SERVICE extends AbsFlexServiceRUD<ID, ?, READ_DTO, UPDATE_DTO, ?>>

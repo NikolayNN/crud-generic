@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class AbsFlexControllerExtCRUD<
         ID,
         READ_DTO extends AbstractDto<ID>,
-        READ_DTO_VIEW extends READ_DTO,
+        READ_DTO_VIEW,
         UPDATE_DTO extends AbsUpdateDto<ID>,
         CREATE_DTO extends AbsCreateDto,
         SETTINGS extends SettingsVoid,
