@@ -4,6 +4,7 @@ import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import lombok.Getter;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,8 +28,13 @@ public abstract class AbsFlexServiceR<
         REPOSITORY extends JpaRepository<ENTITY, ID>> {
 
     protected final AbsDtoModelMapper mapper;
+
     protected final REPOSITORY repository;
+
+    @Getter
     protected final Class<ENTITY> entityClass;
+
+    @Getter
     protected final Class<READ_DTO> readDtoClass;
 
     public AbsFlexServiceR(AbsDtoModelMapper mapper,

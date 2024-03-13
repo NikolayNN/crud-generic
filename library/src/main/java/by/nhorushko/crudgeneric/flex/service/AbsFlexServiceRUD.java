@@ -6,6 +6,7 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.IdEntity;
+import lombok.Getter;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -29,7 +30,8 @@ public abstract class AbsFlexServiceRUD<
         extends AbsFlexServiceR<ENTITY_ID, ENTITY, READ_DTO, REPOSITORY> {
     protected Set<String> IGNORE_PARTIAL_UPDATE_PROPERTIES = Set.of("id");
 
-    protected Class<UPDATE_DTO> updateDtoClass;
+    @Getter
+    protected final Class<UPDATE_DTO> updateDtoClass;
 
     public AbsFlexServiceRUD(AbsDtoModelMapper mapper, REPOSITORY repository,
                              Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass) {

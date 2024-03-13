@@ -43,28 +43,23 @@ public class CrudAbstractGenericMappingChecker implements SmartLifecycle {
 
     public void checkMappers() {
         for (AbsFlexServiceR<?, ?, ?, ?> service : services) {
-            Class<?> entityClass = getClassValue(AbsFlexServiceR.Fields.entityClass, service);
-            Class<?> readDtoClass = getClassValue(AbsFlexServiceR.Fields.readDtoClass, service);
+            Class<?> entityClass = service.getEntityClass();
+            Class<?> readDtoClass = service.getReadDtoClass();
             checkTypeMap(entityClass, readDtoClass);
             checkTypeMap(readDtoClass, entityClass);
             if (service instanceof AbsFlexServiceRUD) {
-                Class<?> updateDtoClass = getClassValue(AbsFlexServiceRUD.Fields.updateDtoClass, service);
+                Class<?> updateDtoClass = ((AbsFlexServiceRUD<?, ?, ?, ?, ?>) service).getUpdateDtoClass();
                 checkTypeMap(updateDtoClass, entityClass);
             }
             if (service instanceof AbsFlexServiceCRUD) {
-                Class<?> createDtoClass = getClassValue(AbsFlexServiceCRUD.Fields.createDtoClass, service);
+                Class<?> createDtoClass = ((AbsFlexServiceCRUD<?, ?, ?, ?, ?, ?>) service).getCreateDtoClass();
                 checkTypeMap(createDtoClass, entityClass);
             }
             if (service instanceof AbsFlexServiceExtCRUD) {
-                Class<?> createDtoClass = getClassValue(AbsFlexServiceExtCRUD.Fields.createDtoClass, service);
+                Class<?> createDtoClass = ((AbsFlexServiceExtCRUD<?, ?, ?, ?, ?, ?, ?, ?>) service).getCreateDtoClass()
                 checkTypeMap(createDtoClass, entityClass);
             }
         }
-    }
-
-    @SneakyThrows
-    protected Class<?> getClassValue(String fieldName, Object service) {
-        return (Class<?>) FieldUtils.readField(service, fieldName, true);
     }
 
     protected void checkTypeMap(Class<?> sourceType, Class<?> destinationType) {

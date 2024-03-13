@@ -6,6 +6,7 @@ import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
+import lombok.Getter;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -29,6 +30,7 @@ public abstract class AbsFlexServiceExtCRUD<
         extends AbsFlexServiceRUD<ENTITY_ID, ENTITY, READ_DTO, UPDATE_DTO, REPOSITORY> {
     protected final AbsMapperExtRelation<CREATE_DTO, ENTITY, EXT_ID, EXT> extMapper;
 
+    @Getter
     protected final Class<CREATE_DTO> createDtoClass;
 
 

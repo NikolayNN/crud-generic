@@ -4,6 +4,7 @@ import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.*;
+import lombok.Getter;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -21,7 +22,8 @@ public abstract class AbsFlexServiceCRUD<
         REPOSITORY extends JpaRepository<ENTITY, ENTITY_ID>>
         extends AbsFlexServiceRUD<ENTITY_ID, ENTITY, READ_DTO, UPDATE_DTO, REPOSITORY> {
 
-    protected Class<CREATE_DTO> createDtoClass;
+    @Getter
+    protected final Class<CREATE_DTO> createDtoClass;
 
     public AbsFlexServiceCRUD(AbsDtoModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<CREATE_DTO> createDtoClass) {
         super(mapper, repository, entityClass, readDtoClass, updateDtoClass);
