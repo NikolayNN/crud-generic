@@ -69,9 +69,6 @@ public class CrudAbstractGenericMappingChecker implements SmartLifecycle {
     }
 
     protected void checkTypeMap(Class<?> sourceType, Class<?> destinationType) {
-        if (sourceType == null || destinationType == null) {
-            return;
-        }
         var typeMap = modelMapper.getTypeMap(sourceType, destinationType);
         if (typeMap == null) {
             throw new UnsupportedOperationException(String.format("TypeMap for mapping %s -> %s is not exists", sourceType.getSimpleName(), destinationType.getSimpleName()));
