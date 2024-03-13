@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
-import by.nhorushko.crudgeneric.flex.mapper.AbstractCreateDto;
+import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.model.AbstractCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.*;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,7 +18,7 @@ public abstract class AbsFlexServiceCRUD<
         REPOSITORY extends JpaRepository<ENTITY, ENTITY_ID>>
         extends AbsFlexServiceRUD<ENTITY_ID, ENTITY, READ_DTO, UPDATE_DTO, REPOSITORY> {
 
-    public AbsFlexServiceCRUD(AbsModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
+    public AbsFlexServiceCRUD(AbsDtoModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
         super(mapper, repository, entityClass, readDtoClass);
     }
 

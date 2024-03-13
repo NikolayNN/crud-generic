@@ -3,7 +3,7 @@ package by.nhorushko.crudgeneric.flex.controller;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceCRUD;
-import by.nhorushko.crudgeneric.flex.mapper.AbstractCreateDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractUpdateDto;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +42,5 @@ public abstract class AbsFlexControllerCRUD<
     }
 
     protected void checkAccessSaveBefore(CREATE_DTO obj, HttpServletRequest request) throws AuthenticationException {
-
     }
 }

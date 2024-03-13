@@ -1,10 +1,12 @@
 package by.nhorushko.crudgeneric.flex.config;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import javax.persistence.EntityManager;
 
 @Configuration
 public class CrudAbstractGenericConfiguration {
@@ -22,7 +24,7 @@ public class CrudAbstractGenericConfiguration {
     }
 
     @Bean
-    public AbsModelMapper absModelMapper(ModelMapper modelMapper) {
-        return new AbsModelMapper(modelMapper);
+    public AbsDtoModelMapper absModelMapper(ModelMapper modelMapper, EntityManager entityManager) {
+        return new AbsDtoModelMapper(modelMapper, entityManager);
     }
 }
