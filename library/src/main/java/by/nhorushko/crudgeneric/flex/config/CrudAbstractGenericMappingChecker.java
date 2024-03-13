@@ -8,19 +8,41 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.modelmapper.ModelMapper;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.SmartLifecycle;
 
 import java.util.Collection;
 
 @RequiredArgsConstructor
-public class CrudAbstractGenericMappingChecker implements ApplicationListener<ContextRefreshedEvent> {
+public class CrudAbstractGenericMappingChecker implements SmartLifecycle {
 
     private final Collection<? extends AbsFlexServiceR<?, ?, ?, ?>> services;
     private final ModelMapper modelMapper;
 
+    private boolean isRunning = false;
+
     @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void start() {
+        checkMappers();
+        isRunning = true;
+    }
+
+    @Override
+    public void stop() {
+        isRunning = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return this.isRunning;
+    }
+
+    @Override
+    public int getPhase() {
+        return Integer.MAX_VALUE;
+    }
+
+    public void checkMappers() {
         for (AbsFlexServiceR<?, ?, ?, ?> service : services) {
             Class<?> entityClass = getClassValue(AbsFlexServiceR.Fields.entityClass, service);
             Class<?> readDtoClass = getClassValue(AbsFlexServiceR.Fields.readDtoClass, service);
