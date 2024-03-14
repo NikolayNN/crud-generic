@@ -51,7 +51,6 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
      * for further customization.
      * </p>
      */
-    @Override
     protected void configureMapper() {
         mapper.getModelMapper().createTypeMap(dtoClass, entityClass)
                 .setPostConverter(createConverterDtoToEntity());

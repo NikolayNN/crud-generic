@@ -41,7 +41,7 @@ public abstract class AbsMapSimple<FROM, TO> {
      * matching field names and types.
      * </p>
      */
-    protected void configureMapper() {
+    private void configureMapper() {
         mapper.getModelMapper().createTypeMap(fromClass, toClass);
     }
 }
