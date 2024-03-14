@@ -48,6 +48,7 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
      *
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for read DTO to entity conversion.
      */
+    @Bean
     public AbsMapBaseDtoToEntity<READ_DTO, ENTITY> mapperReadDtoToEntity() {
         return mapperReadDtoToEntity(this.mapper, readDtoClass, entityClass);
     }
