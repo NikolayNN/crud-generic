@@ -3,6 +3,7 @@ package by.nhorushko.crudgeneric.flex.mapper.composite;
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.AbsMapEntityToDto;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBaseDtoToEntity;
+import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapSimple;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
@@ -100,4 +101,23 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
     }
 
     protected abstract AbsMapEntityToDto<ENTITY, READ_DTO> mapperEntityToReadDto(AbsDtoModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass);
+
+    /**
+     * Creates and configures a mapper for converting entities to read DTOs.
+     * <p>
+     * This method should be overridden to specify the conversion process from entities back to read DTOs,
+     * facilitating the preparation of data for presentation or further processing.
+     * </p>
+     *
+     * @return A configured instance of {@link AbsMapEntityToDto} for entity to read DTO conversion.
+     */
+    @Bean
+    public AbsMapSimple<ENTITY, ENTITY> mapperEntityToEntity() {
+        return mapperEntityToEntity(this.mapper, entityClass);
+    }
+
+    protected AbsMapSimple<ENTITY, ENTITY> mapperEntityToEntity(AbsDtoModelMapper mapper, Class<ENTITY> entityClass) {
+        return new AbsMapSimple<ENTITY, ENTITY>(mapper, entityClass, entityClass) {
+        };
+    }
 }

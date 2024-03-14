@@ -18,13 +18,14 @@ import org.modelmapper.ModelMapper;
  * @param <DTO>    the type of the Data Transfer Object extending {@link AbsBaseDto}
  * @param <ENTITY> the type of the entity extending {@link AbstractEntity}
  */
-public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> {
+public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> extends AbsMapSimple<DTO, ENTITY> {
 
     protected final Class<DTO> dtoClass;
     protected final Class<ENTITY> entityClass;
     protected final AbsDtoModelMapper mapper;
 
     public AbsMapBaseDtoToEntity(AbsDtoModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
+        super(mapper, dtoClass, entityClass);
         this.mapper = mapper;
         this.dtoClass = dtoClass;
         this.entityClass = entityClass;
@@ -52,7 +53,8 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
      * for further customization.
      * </p>
      */
-    private void configureMapper() {
+    @Override
+    protected void configureMapper() {
         mapper.getModelMapper().createTypeMap(dtoClass, entityClass)
                 .setPostConverter(createConverterDtoToEntity());
         this.configureAdditionalMappings(mapper.getModelMapper());
