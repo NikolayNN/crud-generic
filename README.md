@@ -35,11 +35,27 @@ Add the JitPack repository and the framework dependency to your pom.xml:
 </dependency>
 
 ```
-Versions: https://jitpack.io/#NikolayNN/crud-generic
+Find the latest versions at: https://jitpack.io/#NikolayNN/crud-generic
 
 ## Usage Guide
 
-### Step 1: Define Your Entities
+### Step 1: Enable the Generic CRUD Framework
+Before diving into the specifics of entity and DTO creation, enable the framework in your Spring Boot application by using the @EnableAbsGenericCrud annotation. This step is crucial as it sets up the necessary configurations for ModelMapper and other components required by the framework.
+
+Add @EnableAbsGenericCrud to your Spring Boot application's main class or any configuration class:
+
+```java
+@SpringBootApplication
+@EnableAbsGenericCrud
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+
+```
+
+### Step 2: Define Your Entities
 
 Entities should extend AbstractEntity<?>, where ? is the type of your identifier (e.g., Long).
 
@@ -50,7 +66,7 @@ public class MyEntity extends AbstractEntity<Long> {
 }
 ```
 
-### Step 2: Create DTOs
+### Step 3: Create DTOs
 
 Define your DTOs for create, read, and update operations. Create and Update DTOs should extend AbsCreateDto and AbstractDto<?> respectively, while Read DTO can directly extend AbstractDto<?>.
 
@@ -68,7 +84,7 @@ public class MyUpdateDto extends AbstractDto<Long> {
 }
 ```
 
-### Step 3: Implement Mapping Configurations
+### Step 4: Implement Mapping Configurations
 Extend AbsFlexMapConfig in your configuration to set up mappings. Override abstract methods to return concrete mapper instances.
 
 ```java
@@ -87,7 +103,7 @@ public class MyMappingConfig extends AbsFlexMapConfig<MyCreateDto, MyUpdateDto, 
     // Implement other mappings similarly
 }
 ```
-### Step 4: Create Services
+### Step 5: Create Services
 Extend AbsFlexServiceCRUD or AbsFlexServiceExtCRUD for CRUD services. Implement abstract methods and use the provided functionalities.
 
 ```java
@@ -97,7 +113,7 @@ public class MyEntityService extends AbsFlexServiceCRUD<Long, MyEntity, MyReadDt
 }
 ```
 
-### Step 5: Develop Controllers
+### Step 6: Develop Controllers
 Extend AbsFlexControllerCRUD or AbsFlexControllerExtCRUD for CRUD operations in your controller.
 
 ```java
