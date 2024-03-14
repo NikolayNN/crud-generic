@@ -7,8 +7,16 @@ import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 
 /**
- * Абстрактный маппер для объектов DTO, не содержащих ID и, следовательно, не существующих в БД.
- * Применяется как супер класс для DTO, предназначенных для создания новых сущностей.
+ * Abstract mapper for DTO objects that do not contain an ID and therefore do not exist in the database.
+ * <p>
+ * This class is intended as a superclass for DTOs designed for the creation of new entities. It provides
+ * the infrastructure for mapping from a DTO to an entity class, including handling of specific field mapping
+ * and additional customizations. The class leverages {@link AbsDtoModelMapper} for the mapping process and
+ * allows for detailed configuration of the mapping via subclassing.
+ * </p>
+ *
+ * @param <DTO>    the type of the Data Transfer Object extending {@link AbsBaseDto}
+ * @param <ENTITY> the type of the entity extending {@link AbstractEntity}
  */
 public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> {
 
@@ -23,15 +31,42 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
         this.configureMapper();
     }
 
+    /**
+     * Template method for mapping specific fields that cannot be automatically mapped.
+     * <p>
+     * Implement this method in subclasses to handle specific field mappings between the DTO and
+     * the entity that are not covered by the default mapping configuration.
+     * </p>
+     *
+     * @param source      the source DTO
+     * @param destination the destination entity
+     */
     protected void mapSpecificFields(DTO source, ENTITY destination) {
     }
 
+    /**
+     * Configures the {@link ModelMapper} for DTO to entity mapping.
+     * <p>
+     * This method sets up the type mapping between DTO and entity classes and applies a post-converter
+     * for handling specific field mappings. It also calls {@link #configureAdditionalMappings(ModelMapper)}
+     * for further customization.
+     * </p>
+     */
     private void configureMapper() {
         mapper.getModelMapper().createTypeMap(dtoClass, entityClass)
                 .setPostConverter(createConverterDtoToEntity());
         this.configureAdditionalMappings(mapper.getModelMapper());
     }
 
+    /**
+     * Creates a converter for mapping from DTO to entity.
+     * <p>
+     * The converter applies specific field mappings via {@link #mapSpecificFields(Object, Object)} and
+     * handles additional custom processing after specific field mappings have been applied.
+     * </p>
+     *
+     * @return a {@link Converter} that maps from DTO to entity
+     */
     protected Converter<DTO, ENTITY> createConverterDtoToEntity() {
         return context -> {
             DTO source = context.getSource();
@@ -42,12 +77,32 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
         };
     }
 
+    /**
+     * Hook method for additional processing after specific fields have been mapped.
+     * <p>
+     * Override this method in subclasses for any post-mapping customizations or adjustments to the
+     * mapped entity.
+     * </p>
+     *
+     * @param source      the source DTO
+     * @param destination the mapped entity, after specific field mappings
+     * @return the entity with any additional processing applied
+     */
     protected ENTITY handleAfterMapSpecificFields(DTO source, ENTITY destination) {
         return destination;
     }
 
+    /**
+     * Allows for additional custom mapping configurations.
+     * <p>
+     * Override this method in subclasses to add custom mappings or configuration to the {@link ModelMapper}
+     * beyond the default mappings and specific field handling.
+     * </p>
+     *
+     * @param modelMapper the {@link ModelMapper} instance to configure
+     */
     protected void configureAdditionalMappings(ModelMapper modelMapper) {
-        // По умолчанию не добавляет дополнительные настройки.
-        // Переопределите в подклассах для дополнительной кастомизации маппинга.
+        // Default implementation does not add additional mappings.
+        // Override in subclasses for further customization.
     }
 }

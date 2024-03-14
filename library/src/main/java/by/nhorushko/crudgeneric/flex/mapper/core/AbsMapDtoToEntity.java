@@ -5,8 +5,16 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 
 /**
- * Абстрактный маппер для объектов DTO, не содержащих ID и, следовательно, не существующих в БД.
- * Применяется как супер класс для DTO, предназначенных для создания новых сущностей.
+ * Abstract mapper for converting DTOs extending {@link AbstractDto} into entities extending {@link AbstractEntity}.
+ * <p>
+ * This class specializes the {@link AbsMapBaseDtoToEntity} to cater specifically to DTOs that include an ID,
+ * possibly representing existing entities in the database. It inherits the generic mapping capabilities and
+ * provides a foundation for implementing entity-specific mappings that might involve handling of entity IDs
+ * or other properties specific to DTOs used for update or complex creation scenarios.
+ * </p>
+ *
+ * @param <DTO>    the type of the Data Transfer Object, extending {@link AbstractDto}
+ * @param <ENTITY> the type of the entity, extending {@link AbstractEntity}
  */
 public abstract class AbsMapDtoToEntity<DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> extends AbsMapBaseDtoToEntity<DTO, ENTITY> {
 
