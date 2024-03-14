@@ -102,7 +102,7 @@ public abstract class AbsFlexServiceRUD<
      *
      * @param newValue the entity about to be updated
      */
-    private void beforeUpdateHook(ENTITY newValue) {
+    protected void beforeUpdateHook(ENTITY newValue) {
     }
 
     /**
