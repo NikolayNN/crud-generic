@@ -22,11 +22,9 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
 
     protected final Class<DTO> dtoClass;
     protected final Class<ENTITY> entityClass;
-    protected final AbsDtoModelMapper mapper;
 
     public AbsMapBaseDtoToEntity(AbsDtoModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
         super(mapper, dtoClass, entityClass);
-        this.mapper = mapper;
         this.dtoClass = dtoClass;
         this.entityClass = entityClass;
         this.configureMapper();
