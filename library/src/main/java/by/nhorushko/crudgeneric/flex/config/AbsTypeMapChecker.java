@@ -10,6 +10,17 @@ import org.springframework.context.SmartLifecycle;
 
 import java.util.Collection;
 
+/**
+ * A utility class that verifies the existence and correctness of ModelMapper type mappings
+ * for all services extending {@link AbsFlexServiceR} and its subclasses at application startup.
+ * <p>
+ * This class implements {@link SmartLifecycle}, allowing it to perform type mapping checks
+ * during the startup phase of the application. It ensures that all required DTO to entity
+ * mappings (and vice versa) are correctly configured in ModelMapper for the services used in
+ * the application, throwing an exception if any required mapping is missing. This proactive
+ * check helps in identifying configuration issues early in the development lifecycle.
+ * </p>
+ */
 @RequiredArgsConstructor
 public class AbsTypeMapChecker implements SmartLifecycle {
 
