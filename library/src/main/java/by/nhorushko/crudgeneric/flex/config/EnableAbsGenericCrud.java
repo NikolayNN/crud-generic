@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import(CrudAbstractGenericConfiguration.class)
-public @interface EnableCrudAbstractGeneric {
+@Import(AbsGenericCrudConfiguration.class)
+public @interface EnableAbsGenericCrud {
 }
 

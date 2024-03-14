@@ -11,7 +11,7 @@ import javax.persistence.EntityManager;
 import java.util.List;
 
 @Configuration
-public class CrudAbstractGenericConfiguration {
+public class AbsGenericCrudConfiguration {
 
     @Bean
     public ModelMapper modelMapper() {
@@ -31,7 +31,7 @@ public class CrudAbstractGenericConfiguration {
     }
 
     @Bean
-    public CrudAbstractGenericMappingChecker crudAbstractGenericMappingChecker(List<? extends AbsFlexServiceR<?, ?, ?, ?>> services, ModelMapper modelMapper) {
-        return new CrudAbstractGenericMappingChecker(services, modelMapper);
+    public AbsTypeMapChecker crudAbstractGenericMappingChecker(List<? extends AbsFlexServiceR<?, ?, ?, ?>> services, ModelMapper modelMapper) {
+        return new AbsTypeMapChecker(services, modelMapper);
     }
 }

@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex.service;
 
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
-import by.nhorushko.crudgeneric.flex.mapper.AbsMapperExtRelation;
+import by.nhorushko.crudgeneric.flex.mapper.mapper.AbsMapperExtRelation;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 

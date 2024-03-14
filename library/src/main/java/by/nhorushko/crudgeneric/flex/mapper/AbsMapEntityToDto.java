@@ -6,12 +6,12 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.AbstractCondition;
 import org.modelmapper.spi.MappingContext;
 
-public abstract class AbsMappingConfigEntity<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>> {
+public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>> {
     private final AbsEntityModelMapper mapper;
     private final Class<ENTITY> entityClass;
     private final Class<DTO> dtoClass;
 
-    public AbsMappingConfigEntity(AbsEntityModelMapper mapper, Class<ENTITY> entityClass, Class<DTO> dtoClass) {
+    public AbsMapEntityToDto(AbsEntityModelMapper mapper, Class<ENTITY> entityClass, Class<DTO> dtoClass) {
         this.mapper = mapper;
         this.entityClass = entityClass;
         this.dtoClass = dtoClass;

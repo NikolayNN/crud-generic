@@ -5,15 +5,13 @@ import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceExtCRUD;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.SmartLifecycle;
 
 import java.util.Collection;
 
 @RequiredArgsConstructor
-public class CrudAbstractGenericMappingChecker implements SmartLifecycle {
+public class AbsTypeMapChecker implements SmartLifecycle {
 
     private final Collection<? extends AbsFlexServiceR<?, ?, ?, ?>> services;
     private final ModelMapper modelMapper;

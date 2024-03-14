@@ -1,4 +1,4 @@
-package by.nhorushko.crudgeneric.flex.mapper;
+package by.nhorushko.crudgeneric.flex.mapper.core;
 
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
@@ -10,13 +10,13 @@ import org.modelmapper.ModelMapper;
  * Абстрактный маппер для объектов DTO, не содержащих ID и, следовательно, не существующих в БД.
  * Применяется как супер класс для DTO, предназначенных для создания новых сущностей.
  */
-public abstract class AbsMappingConfigAbstractBaseDto<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> {
+public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> {
 
     protected final Class<DTO> dtoClass;
     protected final Class<ENTITY> entityClass;
     protected final AbsDtoModelMapper mapper;
 
-    public AbsMappingConfigAbstractBaseDto(AbsDtoModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
+    public AbsMapBaseDtoToEntity(AbsDtoModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
         this.mapper = mapper;
         this.dtoClass = dtoClass;
         this.entityClass = entityClass;

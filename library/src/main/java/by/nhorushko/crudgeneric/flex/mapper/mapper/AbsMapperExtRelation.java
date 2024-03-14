@@ -1,4 +1,4 @@
-package by.nhorushko.crudgeneric.flex.mapper;
+package by.nhorushko.crudgeneric.flex.mapper.mapper;
 
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
