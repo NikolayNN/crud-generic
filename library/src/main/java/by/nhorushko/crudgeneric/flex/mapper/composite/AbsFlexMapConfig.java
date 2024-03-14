@@ -117,7 +117,7 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
     }
 
     protected AbsMapSimple<ENTITY, ENTITY> mapperEntityToEntity(AbsDtoModelMapper mapper, Class<ENTITY> entityClass) {
-        return new AbsMapSimple<ENTITY, ENTITY>(mapper, entityClass, entityClass) {
+        return new AbsMapSimple<>(mapper, entityClass, entityClass) {
         };
     }
 }
