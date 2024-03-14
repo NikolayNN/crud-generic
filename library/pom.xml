@@ -122,6 +122,7 @@
                     <target>${java.version}</target>
                     <compilerArgs>
                         <arg>-g</arg>
+                        <arg>-parameters</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
