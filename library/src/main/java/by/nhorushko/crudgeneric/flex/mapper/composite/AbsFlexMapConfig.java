@@ -103,13 +103,20 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
     protected abstract AbsMapEntityToDto<ENTITY, READ_DTO> mapperEntityToReadDto(AbsDtoModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass);
 
     /**
-     * Creates and configures a mapper for converting entities to read DTOs.
+     * Provides a self-mapping configuration for entities.
      * <p>
-     * This method should be overridden to specify the conversion process from entities back to read DTOs,
-     * facilitating the preparation of data for presentation or further processing.
+     * This method facilitates the creation of a self-mapping instance for entities, typically used for
+     * cloning or copying properties within the same entity class. It should be overridden when a custom
+     * configuration is needed for the self-mapping process, allowing for modifications or specific handling
+     * during the entity to entity conversion. This can be particularly useful for creating deep copies of entities
+     * or applying certain transformations without altering the original entity.
+     * </p>
+     * <p>
+     * The provided implementation leverages {@link AbsMapSimple} to create a direct mapping between the same entity
+     * class, effectively serving as a utility for entity duplication or property transfer within entities of the same type.
      * </p>
      *
-     * @return A configured instance of {@link AbsMapEntityToDto} for entity to read DTO conversion.
+     * @return An instance of {@link AbsMapSimple} configured for self-mapping of the entity class.
      */
     @Bean
     public AbsMapSimple<ENTITY, ENTITY> mapperEntityToEntity() {
