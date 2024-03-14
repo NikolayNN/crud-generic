@@ -20,7 +20,7 @@ import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
  * @param <FROM> the source object class from which data is mapped
  * @param <TO>   the destination object class to which data is mapped
  */
-public abstract class AbsMapSimple<FROM, TO> {
+public abstract class AbsMapSimple<FROM, TO> implements RegisterableMapper {
     protected final Class<FROM> fromClass;
     protected final Class<TO> toClass;
     protected final AbsDtoModelMapper mapper;
@@ -29,7 +29,11 @@ public abstract class AbsMapSimple<FROM, TO> {
         this.mapper = mapper;
         this.fromClass = dtoClass;
         this.toClass = entityClass;
-        this.configureMapper();
+    }
+
+    @Override
+    public void register() {
+        configureMapper();
     }
 
     /**
@@ -41,7 +45,7 @@ public abstract class AbsMapSimple<FROM, TO> {
      * matching field names and types.
      * </p>
      */
-    private void configureMapper() {
+    protected void configureMapper() {
         mapper.getModelMapper().createTypeMap(fromClass, toClass);
     }
 }

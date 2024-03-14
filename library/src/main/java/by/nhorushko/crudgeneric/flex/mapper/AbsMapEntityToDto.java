@@ -1,6 +1,7 @@
 package by.nhorushko.crudgeneric.flex.mapper;
 
 import by.nhorushko.crudgeneric.flex.AbsEntityModelMapper;
+import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.AbstractCondition;
@@ -26,7 +27,7 @@ import org.modelmapper.spi.MappingContext;
  * @param <ENTITY> the type of the entity extending {@link AbstractEntity}
  * @param <DTO>    the type of the DTO extending {@link AbstractDto}, intended to have final fields
  */
-public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>> {
+public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>> implements RegisterableMapper {
     private final AbsEntityModelMapper mapper;
     private final Class<ENTITY> entityClass;
     private final Class<DTO> dtoClass;
@@ -35,6 +36,10 @@ public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO ex
         this.mapper = mapper;
         this.entityClass = entityClass;
         this.dtoClass = dtoClass;
+    }
+
+    @Override
+    public void register() {
         this.configureMapper();
     }
 
@@ -56,7 +61,7 @@ public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO ex
      * ensuring their proper initialization during the mapping process.
      * </p>
      */
-    private void configureMapper() {
+    protected void configureMapper() {
         mapper.getModelMapper()
                 .createTypeMap(entityClass, dtoClass)
                 .setCondition(new AbstractCondition<>() {

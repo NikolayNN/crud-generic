@@ -27,7 +27,6 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
         super(mapper, dtoClass, entityClass);
         this.dtoClass = dtoClass;
         this.entityClass = entityClass;
-        this.configureMapper();
     }
 
     /**

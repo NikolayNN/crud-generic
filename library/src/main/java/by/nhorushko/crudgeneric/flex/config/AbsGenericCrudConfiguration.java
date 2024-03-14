@@ -1,6 +1,7 @@
 package by.nhorushko.crudgeneric.flex.config;
 
 import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -88,5 +89,10 @@ public class AbsGenericCrudConfiguration {
     @Bean
     public AbsTypeMapChecker crudAbstractGenericMappingChecker(List<? extends AbsFlexServiceR<?, ?, ?, ?>> services, ModelMapper modelMapper) {
         return new AbsTypeMapChecker(services, modelMapper);
+    }
+
+    @Bean
+    public AbsMapperRegister absMapperRegister(List<? extends RegisterableMapper> mappers) {
+        return new AbsMapperRegister(mappers);
     }
 }
