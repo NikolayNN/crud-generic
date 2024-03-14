@@ -60,6 +60,6 @@ public class AbsMapperRegister implements SmartLifecycle {
 
     @Override
     public int getPhase() {
-        return Integer.MAX_VALUE;
+        return AbsTypeMapChecker.PHASE_NUMBER - 1;
     }
 }

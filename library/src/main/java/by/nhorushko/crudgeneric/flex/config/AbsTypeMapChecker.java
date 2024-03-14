@@ -24,6 +24,8 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class AbsTypeMapChecker implements SmartLifecycle {
 
+    public static final int PHASE_NUMBER = Integer.MAX_VALUE;
+
     private final Collection<? extends AbsFlexServiceR<?, ?, ?, ?>> services;
     private final ModelMapper modelMapper;
 
@@ -47,7 +49,7 @@ public class AbsTypeMapChecker implements SmartLifecycle {
 
     @Override
     public int getPhase() {
-        return Integer.MAX_VALUE;
+        return PHASE_NUMBER;
     }
 
     public void checkMappers() {
