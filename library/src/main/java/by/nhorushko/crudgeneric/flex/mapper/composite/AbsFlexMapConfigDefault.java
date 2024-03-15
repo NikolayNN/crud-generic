@@ -10,7 +10,6 @@ import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.TypeMap;
-import org.modelmapper.builder.ConfigurableConditionExpression;
 
 
 /**
@@ -41,8 +40,8 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
             }
 
             @Override
-            protected void setupMappingRules(ConfigurableConditionExpression<CREATE_DTO, ENTITY> mapper) {
-                setupMappingRulesCreateDtoToEntity(mapper);
+            protected void setupTypeMap(TypeMap<CREATE_DTO, ENTITY> typeMap) {
+                setupMappingRulesCreateDtoToEntity(typeMap);
             }
         };
     }
@@ -62,7 +61,7 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsCreateDtoToEntity(AbsModelMapper mapper, CREATE_DTO source, ENTITY destination);
 
-    protected void setupMappingRulesCreateDtoToEntity(ConfigurableConditionExpression<CREATE_DTO, ENTITY> mapper) {
+    protected void setupMappingRulesCreateDtoToEntity(TypeMap<CREATE_DTO, ENTITY> typeMap) {
     }
 
     @Override
@@ -74,8 +73,8 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
             }
 
             @Override
-            protected void setupMappingRules(ConfigurableConditionExpression<UPDATE_DTO, ENTITY> mapper) {
-                setupMappingRulesUpdateDtoToEntity(mapper);
+            protected void setupTypeMap(TypeMap<UPDATE_DTO, ENTITY> typeMap) {
+                setupMappingRulesUpdateDtoToEntity(typeMap);
             }
         };
     }
@@ -95,7 +94,7 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsUpdateDtoToEntity(AbsModelMapper mapper, UPDATE_DTO source, ENTITY destination);
 
-    protected void setupMappingRulesUpdateDtoToEntity(ConfigurableConditionExpression<UPDATE_DTO, ENTITY> mapper) {
+    protected void setupMappingRulesUpdateDtoToEntity(TypeMap<UPDATE_DTO, ENTITY> typeMap) {
 
     }
 
@@ -108,8 +107,8 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
             }
 
             @Override
-            protected void setupMappingRules(ConfigurableConditionExpression<READ_DTO, ENTITY> mapper) {
-                setupMappingRulesReadDtoToEntity(mapper);
+            protected void setupTypeMap(TypeMap<READ_DTO, ENTITY> typeMap) {
+                setupMappingRulesReadDtoToEntity(typeMap);
             }
         };
     }
@@ -129,7 +128,7 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination);
 
-    protected void setupMappingRulesReadDtoToEntity(ConfigurableConditionExpression<READ_DTO, ENTITY> mapper) {
+    protected void setupMappingRulesReadDtoToEntity(TypeMap<READ_DTO, ENTITY> typeMap) {
 
     }
 

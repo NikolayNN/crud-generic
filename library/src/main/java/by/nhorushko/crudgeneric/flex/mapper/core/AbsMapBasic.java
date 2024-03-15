@@ -2,6 +2,7 @@ package by.nhorushko.crudgeneric.flex.mapper.core;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.PropertyMap;
 import org.modelmapper.TypeMap;
 import org.modelmapper.builder.ConfigurableConditionExpression;
 
@@ -58,28 +59,12 @@ public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
      */
     protected final TypeMap<FROM, TO> configureMapper() {
         TypeMap<FROM, TO> typeMap = mapper.getModelMapper().createTypeMap(fromClass, toClass);
-        typeMap.addMappings(this::setupMappingRules);
+        setupTypeMap(typeMap);
         customizeTypeMap(typeMap);
         return typeMap;
     }
 
-    /**
-     * Defines additional mapping rules for the type map configuration.
-     * <p>
-     * This method is designed to be overridden by subclasses to specify custom mapping rules,
-     * such as excluding fields from the mapping or employing custom converters for specific properties.
-     * By default, it does not perform any actions, serving as a template method for customization.
-     * </p>
-     * <p>
-     * To exclude fields from the mapping, use the {@code mapper} parameter's methods, such as {@code skip()}.
-     * For example, to exclude a field named 'exampleField' from being mapped, you could call
-     * {@code mapper.skip(source.getExampleField())}.
-     * </p>
-     *
-     * @param mapper The {@link ConfigurableConditionExpression} allowing specific configuration
-     *               of the mapping rules between source and destination types.
-     */
-    protected void setupMappingRules(ConfigurableConditionExpression<FROM, TO> mapper) {
+    protected void setupTypeMap(TypeMap<FROM, TO> typeMap) {
     }
 
 
