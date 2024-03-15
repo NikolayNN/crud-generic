@@ -128,13 +128,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
 
     protected AbsMapBasic<ENTITY, ENTITY> mapperEntityToEntity(AbsModelMapper mapper, Class<ENTITY> entityClass) {
         return new AbsMapBasic<>(mapper, entityClass, entityClass) {
-            @Override
-            protected void setupTypeMap(TypeMap<ENTITY, ENTITY> typeMap) {
-                setupMappingRulesEntityToEntity(typeMap);
-            }
         };
-    }
-
-    protected void setupMappingRulesEntityToEntity(TypeMap<ENTITY, ENTITY> typeMap) {
     }
 }

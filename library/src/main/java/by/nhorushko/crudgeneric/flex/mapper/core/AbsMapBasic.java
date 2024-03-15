@@ -2,9 +2,7 @@ package by.nhorushko.crudgeneric.flex.mapper.core;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
 import org.modelmapper.TypeMap;
-import org.modelmapper.builder.ConfigurableConditionExpression;
 
 /**
  * Provides a simplified mapping configuration for straightforward object transformations.
@@ -59,14 +57,9 @@ public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
      */
     protected final TypeMap<FROM, TO> configureMapper() {
         TypeMap<FROM, TO> typeMap = mapper.getModelMapper().createTypeMap(fromClass, toClass);
-        setupTypeMap(typeMap);
         customizeTypeMap(typeMap);
         return typeMap;
     }
-
-    protected void setupTypeMap(TypeMap<FROM, TO> typeMap) {
-    }
-
 
     /**
      * Allows further customization of the established type map.

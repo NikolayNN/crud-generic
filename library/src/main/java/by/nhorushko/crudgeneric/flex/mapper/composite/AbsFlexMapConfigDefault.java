@@ -38,11 +38,6 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
             protected void mapSpecificFields(CREATE_DTO source, ENTITY destination) {
                 mapSpecificFieldsCreateDtoToEntity(mapper, source, destination);
             }
-
-            @Override
-            protected void setupTypeMap(TypeMap<CREATE_DTO, ENTITY> typeMap) {
-                setupMappingRulesCreateDtoToEntity(typeMap);
-            }
         };
     }
 
@@ -61,20 +56,12 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsCreateDtoToEntity(AbsModelMapper mapper, CREATE_DTO source, ENTITY destination);
 
-    protected void setupMappingRulesCreateDtoToEntity(TypeMap<CREATE_DTO, ENTITY> typeMap) {
-    }
-
     @Override
     protected AbsMapBasic<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity(AbsModelMapper mapper, Class<UPDATE_DTO> updateDtoClass, Class<ENTITY> entityClass) {
         return new AbsMapUpdateDtoToEntity<>(mapper, updateDtoClass, entityClass) {
             @Override
             protected void mapSpecificFields(UPDATE_DTO source, ENTITY destination) {
                 mapSpecificFieldsUpdateDtoToEntity(mapper, source, destination);
-            }
-
-            @Override
-            protected void setupTypeMap(TypeMap<UPDATE_DTO, ENTITY> typeMap) {
-                setupMappingRulesUpdateDtoToEntity(typeMap);
             }
         };
     }
@@ -94,21 +81,12 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsUpdateDtoToEntity(AbsModelMapper mapper, UPDATE_DTO source, ENTITY destination);
 
-    protected void setupMappingRulesUpdateDtoToEntity(TypeMap<UPDATE_DTO, ENTITY> typeMap) {
-
-    }
-
     @Override
     protected AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
         return new AbsMapDtoToEntity<>(mapper, readDtoClass, entityClass) {
             @Override
             protected void mapSpecificFields(READ_DTO source, ENTITY destination) {
                 mapSpecificFieldsReadDtoToEntity(mapper, source, destination);
-            }
-
-            @Override
-            protected void setupTypeMap(TypeMap<READ_DTO, ENTITY> typeMap) {
-                setupMappingRulesReadDtoToEntity(typeMap);
             }
         };
     }
@@ -127,10 +105,6 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      * @param destination The entity to which data from the DTO is mapped.
      */
     protected abstract void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination);
-
-    protected void setupMappingRulesReadDtoToEntity(TypeMap<READ_DTO, ENTITY> typeMap) {
-
-    }
 
     @Override
     protected AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
