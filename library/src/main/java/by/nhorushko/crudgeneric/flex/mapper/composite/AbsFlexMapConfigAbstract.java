@@ -8,6 +8,7 @@ import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.TypeMap;
+import org.modelmapper.builder.ConfigurableConditionExpression;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -128,13 +129,12 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
     protected AbsMapBasic<ENTITY, ENTITY> mapperEntityToEntity(AbsModelMapper mapper, Class<ENTITY> entityClass) {
         return new AbsMapBasic<>(mapper, entityClass, entityClass) {
             @Override
-            protected void customizeTypeMap(TypeMap<ENTITY, ENTITY> typeMap) {
-                customizeTypeMapEntityToEntity(typeMap);
+            protected void setupMappingRules(ConfigurableConditionExpression<ENTITY, ENTITY> mapper) {
+                setupMappingRulesEntityToEntity(mapper);
             }
         };
     }
 
-    protected void customizeTypeMapEntityToEntity(TypeMap<ENTITY, ENTITY> typeMap) {
-
+    protected void setupMappingRulesEntityToEntity(ConfigurableConditionExpression<ENTITY, ENTITY> mapper) {
     }
 }
