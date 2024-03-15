@@ -6,6 +6,7 @@ import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.AbstractCondition;
+import org.modelmapper.TypeMap;
 import org.modelmapper.spi.MappingContext;
 
 /**
@@ -62,9 +63,10 @@ public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO ex
      * method to perform the actual conversion. This setup is particularly important for DTOs with final fields,
      * ensuring their proper initialization during the mapping process.
      * </p>
+     * see also {@link AbsMapBasic#configureMapper()}
      */
-    protected void configureMapper() {
-        mapper.getModelMapper()
+    protected TypeMap<ENTITY, DTO> configureMapper() {
+        return mapper.getModelMapper()
                 .createTypeMap(entityClass, dtoClass)
                 .setCondition(new AbstractCondition<>() {
                     @Override

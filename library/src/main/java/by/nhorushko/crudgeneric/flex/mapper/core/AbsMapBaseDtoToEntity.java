@@ -5,6 +5,7 @@ import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeMap;
 
 /**
  * Abstract mapper for DTO objects that do not contain an ID and therefore do not exist in the database.
@@ -46,24 +47,25 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
      * Configures the {@link ModelMapper} for DTO to entity mapping.
      * <p>
      * This method sets up the type mapping between DTO and entity classes and applies a post-converter
-     * for handling specific field mappings. It also calls {@link #configureAdditionalMappings(ModelMapper)}
-     * for further customization.
+     * for handling specific field mappings.
      * </p>
+     *
+     * @return The {@link TypeMap}
      */
-    protected void configureMapper() {
-        mapper.getModelMapper().createTypeMap(dtoClass, entityClass)
+    protected TypeMap<DTO, ENTITY> configureMapper() {
+        return mapper.getModelMapper()
+                .createTypeMap(dtoClass, entityClass)
                 .setPostConverter(createConverterDtoToEntity());
-        this.configureAdditionalMappings(mapper.getModelMapper());
     }
 
     /**
      * Creates a converter for mapping from DTO to entity.
      * <p>
-     * The converter applies specific field mappings via {@link #mapSpecificFields(Object, Object)} and
+     * The converter applies specific field mappings via {@link mapSpecificFields(Object, Object)} and
      * handles additional custom processing after specific field mappings have been applied.
      * </p>
      *
-     * @return a {@link Converter} that maps from DTO to entity
+     * see also {@link AbsMapBasic#configureMapper()}
      */
     protected Converter<DTO, ENTITY> createConverterDtoToEntity() {
         return context -> {
@@ -88,19 +90,5 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
      */
     protected ENTITY handleAfterMapSpecificFields(DTO source, ENTITY destination) {
         return destination;
-    }
-
-    /**
-     * Allows for additional custom mapping configurations.
-     * <p>
-     * Override this method in subclasses to add custom mappings or configuration to the {@link ModelMapper}
-     * beyond the default mappings and specific field handling.
-     * </p>
-     *
-     * @param modelMapper the {@link ModelMapper} instance to configure
-     */
-    protected void configureAdditionalMappings(ModelMapper modelMapper) {
-        // Default implementation does not add additional mappings.
-        // Override in subclasses for further customization.
     }
 }

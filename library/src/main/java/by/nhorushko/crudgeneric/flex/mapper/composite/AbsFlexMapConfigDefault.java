@@ -9,6 +9,7 @@ import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapDtoToEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import org.modelmapper.TypeMap;
 
 
 /**
@@ -25,8 +26,7 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
  * @param <READ_DTO>   the DTO class used for read operations
  * @param <ENTITY>     the entity class that DTOs map to and from
  */
-public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPDATE_DTO extends AbstractDto<?>, READ_DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>>
-        extends AbsFlexMapConfigAbstract<CREATE_DTO, UPDATE_DTO, READ_DTO, ENTITY> {
+public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPDATE_DTO extends AbstractDto<?>, READ_DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> extends AbsFlexMapConfigAbstract<CREATE_DTO, UPDATE_DTO, READ_DTO, ENTITY> {
     public AbsFlexMapConfigDefault(AbsModelMapper mapper, Class<CREATE_DTO> createDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
         super(mapper, createDtoClass, updateDtoClass, readDtoClass, entityClass);
     }
@@ -63,6 +63,11 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
             protected void mapSpecificFields(UPDATE_DTO source, ENTITY destination) {
                 mapSpecificFieldsUpdateDtoToEntity(mapper, source, destination);
             }
+
+            @Override
+            protected void customizeTypeMap(TypeMap<UPDATE_DTO, ENTITY> typeMap) {
+                customizeTypeMapUpdateDtoToEntity(typeMap);
+            }
         };
     }
 
@@ -81,12 +86,21 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsUpdateDtoToEntity(AbsModelMapper mapper, UPDATE_DTO source, ENTITY destination);
 
+    protected void customizeTypeMapUpdateDtoToEntity(TypeMap<UPDATE_DTO, ENTITY> typeMap) {
+
+    }
+
     @Override
     protected AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
         return new AbsMapDtoToEntity<>(mapper, readDtoClass, entityClass) {
             @Override
             protected void mapSpecificFields(READ_DTO source, ENTITY destination) {
                 mapSpecificFieldsReadDtoToEntity(mapper, source, destination);
+            }
+
+            @Override
+            protected void customizeTypeMap(TypeMap<READ_DTO, ENTITY> typeMap) {
+                customizeTypeMapReadDtoToEntity(typeMap);
             }
         };
     }
@@ -106,12 +120,21 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      */
     protected abstract void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination);
 
+    protected void customizeTypeMapReadDtoToEntity(TypeMap<READ_DTO, ENTITY> typeMap) {
+
+    }
+
     @Override
     protected AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
         return new AbsMapEntityToDto<>(mapper, entityClass, readDtoClass) {
             @Override
             protected READ_DTO create(ENTITY entity) {
                 return createReadDtoFromEntity(mapper, entity);
+            }
+
+            @Override
+            protected void customizeTypeMap(TypeMap<ENTITY, READ_DTO> typeMap) {
+                customizeTypeMapEntityToReadDto(typeMap);
             }
         };
     }
@@ -130,4 +153,8 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      * @return A fully constructed READ DTO corresponding to the given entity.
      */
     protected abstract READ_DTO createReadDtoFromEntity(AbsModelMapper mapper, ENTITY entity);
+
+    protected void customizeTypeMapEntityToReadDto(TypeMap<ENTITY, READ_DTO> typeMap) {
+
+    }
 }
