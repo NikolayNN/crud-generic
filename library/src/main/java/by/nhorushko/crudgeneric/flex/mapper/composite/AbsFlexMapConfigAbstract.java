@@ -40,22 +40,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
     }
 
     /**
-     * Creates and configures a mapper for converting read DTOs to entities.
-     * <p>
-     * Implementations should override this method to define the specific behavior for mapping
-     * from read DTOs to entities, potentially including custom field mappings and post-processing logic.
-     * </p>
-     *
-     * @return A configured instance of {@link AbsMapBaseDtoToEntity} for read DTO to entity conversion.
-     */
-    @Bean
-    public AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity() {
-        return mapperReadDtoToEntity(this.mapper, readDtoClass, entityClass);
-    }
-
-    protected abstract AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass);
-
-    /**
      * Creates and configures a mapper for converting create DTOs to entities.
      * <p>
      * Implementations should override this method to define the specific mapping behavior for creating
@@ -86,6 +70,22 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
     }
 
     protected abstract AbsMapBasic<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity(AbsModelMapper mapper, Class<UPDATE_DTO> updateDtoClass, Class<ENTITY> entityClass);
+
+    /**
+     * Creates and configures a mapper for converting read DTOs to entities.
+     * <p>
+     * Implementations should override this method to define the specific behavior for mapping
+     * from read DTOs to entities, potentially including custom field mappings and post-processing logic.
+     * </p>
+     *
+     * @return A configured instance of {@link AbsMapBaseDtoToEntity} for read DTO to entity conversion.
+     */
+    @Bean
+    public AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity() {
+        return mapperReadDtoToEntity(this.mapper, readDtoClass, entityClass);
+    }
+
+    protected abstract AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass);
 
     /**
      * Creates and configures a mapper for converting entities to read DTOs.

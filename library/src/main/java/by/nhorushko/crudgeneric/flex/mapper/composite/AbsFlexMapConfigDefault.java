@@ -32,31 +32,6 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
     }
 
     @Override
-    protected AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
-        return new AbsMapDtoToEntity<>(mapper, readDtoClass, entityClass) {
-            @Override
-            protected void mapSpecificFields(READ_DTO source, ENTITY destination) {
-                mapSpecificFieldsReadDtoToEntity(mapper, source, destination);
-            }
-        };
-    }
-
-    /**
-     * Defines custom mapping rules from the READ DTO to the entity.
-     * <p>
-     * This abstract method is designed to be overridden in specific mapping configurations to specify how certain
-     * fields or properties in the READ DTO should be transformed and assigned to corresponding fields in the entity.
-     * It allows developers to implement custom field mapping that cannot be automatically mapped between the READ DTO
-     * and the entity, ensuring precise adherence to business logic during data transfer.
-     * </p>
-     *
-     * @param mapper      The instance of {@link AbsModelMapper} used for mapping.
-     * @param source      The source READ DTO from which data is being mapped.
-     * @param destination The entity to which data from the DTO is mapped.
-     */
-    protected abstract void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination);
-
-    @Override
     protected AbsMapBasic<CREATE_DTO, ENTITY> mapperCreateDtoToEntity(AbsModelMapper mapper, Class<CREATE_DTO> createDtoClass, Class<ENTITY> entityClass) {
         return new AbsMapCreateDtoToEntity<>(mapper, createDtoClass, entityClass) {
             @Override
@@ -105,6 +80,31 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      * @param destination The entity that needs to be updated with the DTO's data.
      */
     protected abstract void mapSpecificFieldsUpdateDtoToEntity(AbsModelMapper mapper, UPDATE_DTO source, ENTITY destination);
+
+    @Override
+    protected AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
+        return new AbsMapDtoToEntity<>(mapper, readDtoClass, entityClass) {
+            @Override
+            protected void mapSpecificFields(READ_DTO source, ENTITY destination) {
+                mapSpecificFieldsReadDtoToEntity(mapper, source, destination);
+            }
+        };
+    }
+
+    /**
+     * Defines custom mapping rules from the READ DTO to the entity.
+     * <p>
+     * This abstract method is designed to be overridden in specific mapping configurations to specify how certain
+     * fields or properties in the READ DTO should be transformed and assigned to corresponding fields in the entity.
+     * It allows developers to implement custom field mapping that cannot be automatically mapped between the READ DTO
+     * and the entity, ensuring precise adherence to business logic during data transfer.
+     * </p>
+     *
+     * @param mapper      The instance of {@link AbsModelMapper} used for mapping.
+     * @param source      The source READ DTO from which data is being mapped.
+     * @param destination The entity to which data from the DTO is mapped.
+     */
+    protected abstract void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination);
 
     @Override
     protected AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
