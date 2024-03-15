@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.mapper.core;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.modelmapper.Converter;
@@ -11,19 +11,19 @@ import org.modelmapper.ModelMapper;
  * <p>
  * This class is intended as a superclass for DTOs designed for the creation of new entities. It provides
  * the infrastructure for mapping from a DTO to an entity class, including handling of specific field mapping
- * and additional customizations. The class leverages {@link AbsDtoModelMapper} for the mapping process and
+ * and additional customizations. The class leverages {@link AbsModelMapper} for the mapping process and
  * allows for detailed configuration of the mapping via subclassing.
  * </p>
  *
  * @param <DTO>    the type of the Data Transfer Object extending {@link AbsBaseDto}
  * @param <ENTITY> the type of the entity extending {@link AbstractEntity}
  */
-public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> extends AbsMapSimple<DTO, ENTITY> {
+public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>> extends AbsMapBasic<DTO, ENTITY> {
 
     protected final Class<DTO> dtoClass;
     protected final Class<ENTITY> entityClass;
 
-    public AbsMapBaseDtoToEntity(AbsDtoModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
+    public AbsMapBaseDtoToEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
         super(mapper, dtoClass, entityClass);
         this.dtoClass = dtoClass;
         this.entityClass = entityClass;

@@ -1,6 +1,7 @@
 package by.nhorushko.crudgeneric.flex.mapper;
 
-import by.nhorushko.crudgeneric.flex.AbsEntityModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
@@ -12,7 +13,7 @@ import org.modelmapper.spi.MappingContext;
  * <p>
  * This class is designed for converting instances of entities, extending {@link AbstractEntity},
  * into their corresponding DTO representations, particularly those DTOs extending {@link AbstractDto}
- * with final fields. It leverages {@link AbsEntityModelMapper} for the mapping process and necessitates
+ * with final fields. It leverages {@link AbsModelMapper} for the mapping process and necessitates
  * the implementation of the {@code create} method in subclasses. This method defines the specific
  * conversion logic from an entity to its DTO, accommodating the instantiation of DTOs with final fields
  * by directly passing the necessary values to their constructors or builder methods.
@@ -27,12 +28,13 @@ import org.modelmapper.spi.MappingContext;
  * @param <ENTITY> the type of the entity extending {@link AbstractEntity}
  * @param <DTO>    the type of the DTO extending {@link AbstractDto}, intended to have final fields
  */
-public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>> implements RegisterableMapper {
-    private final AbsEntityModelMapper mapper;
+public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>> extends AbsMapBasic<ENTITY, DTO> implements RegisterableMapper {
+    private final AbsModelMapper mapper;
     private final Class<ENTITY> entityClass;
     private final Class<DTO> dtoClass;
 
-    public AbsMapEntityToDto(AbsEntityModelMapper mapper, Class<ENTITY> entityClass, Class<DTO> dtoClass) {
+    public AbsMapEntityToDto(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<DTO> dtoClass) {
+        super(mapper, entityClass, dtoClass);
         this.mapper = mapper;
         this.entityClass = entityClass;
         this.dtoClass = dtoClass;

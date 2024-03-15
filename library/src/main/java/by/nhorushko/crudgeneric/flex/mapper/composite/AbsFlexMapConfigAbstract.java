@@ -1,9 +1,9 @@
 package by.nhorushko.crudgeneric.flex.mapper.composite;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.AbsMapEntityToDto;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBaseDtoToEntity;
-import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapSimple;
+import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean;
  * Base configuration class for establishing mappings between various types of Data Transfer Objects (DTOs) and entities.
  * <p>
  * This abstract class serves as a foundation for defining the mappings between create, update, read DTOs, and their corresponding
- * entities. It leverages {@link AbsDtoModelMapper} for the actual mapping process. The class defines methods to create and configure
+ * entities. It leverages {@link AbsModelMapper} for the actual mapping process. The class defines methods to create and configure
  * the necessary mapper instances for different types of DTO-to-entity and entity-to-DTO conversions. Implementations must provide
  * specific mapping logic by overriding the protected abstract methods.
  * </p>
@@ -23,15 +23,15 @@ import org.springframework.context.annotation.Bean;
  * @param <READ_DTO>   The type of the DTO used for reading entities, extending {@link AbstractDto}.
  * @param <ENTITY>     The type of the entity being mapped to or from.
  */
-public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO extends AbstractDto<?>, READ_DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> {
+public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UPDATE_DTO extends AbstractDto<?>, READ_DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> {
 
-    private final AbsDtoModelMapper mapper;
+    private final AbsModelMapper mapper;
     private final Class<CREATE_DTO> createDtoClass;
     private final Class<UPDATE_DTO> updateDtoClass;
     private final Class<READ_DTO> readDtoClass;
     private final Class<ENTITY> entityClass;
 
-    public AbsFlexMapConfig(AbsDtoModelMapper mapper, Class<CREATE_DTO> createDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
+    public AbsFlexMapConfigAbstract(AbsModelMapper mapper, Class<CREATE_DTO> createDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
         this.mapper = mapper;
         this.createDtoClass = createDtoClass;
         this.updateDtoClass = updateDtoClass;
@@ -49,11 +49,11 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for read DTO to entity conversion.
      */
     @Bean
-    public AbsMapBaseDtoToEntity<READ_DTO, ENTITY> mapperReadDtoToEntity() {
+    public AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity() {
         return mapperReadDtoToEntity(this.mapper, readDtoClass, entityClass);
     }
 
-    protected abstract AbsMapBaseDtoToEntity<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsDtoModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass);
+    protected abstract AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass);
 
     /**
      * Creates and configures a mapper for converting create DTOs to entities.
@@ -65,11 +65,11 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for create DTO to entity conversion.
      */
     @Bean
-    public AbsMapBaseDtoToEntity<CREATE_DTO, ENTITY> mapperCreateDtoToEntity() {
+    public AbsMapBasic<CREATE_DTO, ENTITY> mapperCreateDtoToEntity() {
         return mapperCreateDtoToEntity(this.mapper, createDtoClass, entityClass);
     }
 
-    protected abstract AbsMapBaseDtoToEntity<CREATE_DTO, ENTITY> mapperCreateDtoToEntity(AbsDtoModelMapper mapper, Class<CREATE_DTO> createDtoClass, Class<ENTITY> entityClass);
+    protected abstract AbsMapBasic<CREATE_DTO, ENTITY> mapperCreateDtoToEntity(AbsModelMapper mapper, Class<CREATE_DTO> createDtoClass, Class<ENTITY> entityClass);
 
     /**
      * Creates and configures a mapper for converting update DTOs to entities.
@@ -81,11 +81,11 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for update DTO to entity conversion.
      */
     @Bean
-    public AbsMapBaseDtoToEntity<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity() {
+    public AbsMapBasic<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity() {
         return mapperUpdateDtoToEntity(this.mapper, updateDtoClass, entityClass);
     }
 
-    protected abstract AbsMapBaseDtoToEntity<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity(AbsDtoModelMapper mapper, Class<UPDATE_DTO> createDtoClass, Class<ENTITY> entityClass);
+    protected abstract AbsMapBasic<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity(AbsModelMapper mapper, Class<UPDATE_DTO> updateDtoClass, Class<ENTITY> entityClass);
 
     /**
      * Creates and configures a mapper for converting entities to read DTOs.
@@ -97,11 +97,11 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
      * @return A configured instance of {@link AbsMapEntityToDto} for entity to read DTO conversion.
      */
     @Bean
-    public AbsMapEntityToDto<ENTITY, READ_DTO> mapperEntityToReadDto() {
+    public AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto() {
         return mapperEntityToReadDto(this.mapper, entityClass, readDtoClass);
     }
 
-    protected abstract AbsMapEntityToDto<ENTITY, READ_DTO> mapperEntityToReadDto(AbsDtoModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass);
+    protected abstract AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass);
 
     /**
      * Provides a self-mapping configuration for entities.
@@ -113,19 +113,19 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto, UPDATE_DTO
      * or applying certain transformations without altering the original entity.
      * </p>
      * <p>
-     * The provided implementation leverages {@link AbsMapSimple} to create a direct mapping between the same entity
+     * The provided implementation leverages {@link AbsMapBasic} to create a direct mapping between the same entity
      * class, effectively serving as a utility for entity duplication or property transfer within entities of the same type.
      * </p>
      *
-     * @return An instance of {@link AbsMapSimple} configured for self-mapping of the entity class.
+     * @return An instance of {@link AbsMapBasic} configured for self-mapping of the entity class.
      */
     @Bean
-    public AbsMapSimple<ENTITY, ENTITY> mapperEntityToEntity() {
+    public AbsMapBasic<ENTITY, ENTITY> mapperEntityToEntity() {
         return mapperEntityToEntity(this.mapper, entityClass);
     }
 
-    protected AbsMapSimple<ENTITY, ENTITY> mapperEntityToEntity(AbsDtoModelMapper mapper, Class<ENTITY> entityClass) {
-        return new AbsMapSimple<>(mapper, entityClass, entityClass) {
+    protected AbsMapBasic<ENTITY, ENTITY> mapperEntityToEntity(AbsModelMapper mapper, Class<ENTITY> entityClass) {
+        return new AbsMapBasic<>(mapper, entityClass, entityClass) {
         };
     }
 }

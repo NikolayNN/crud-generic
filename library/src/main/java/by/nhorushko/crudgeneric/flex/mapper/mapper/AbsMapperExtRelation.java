@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.mapper.mapper;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * <p>
  * This class provides functionality to map {@link AbsCreateDto} instances to entity objects
  * while establishing a relationship with another specified entity of type {@code EXT}. It leverages
- * {@link AbsDtoModelMapper} for the initial mapping process and then sets up a specific relationship
+ * {@link AbsModelMapper} for the initial mapping process and then sets up a specific relationship
  * based on the provided external entity ID {@code EXT_ID}.
  * </p>
  * <p>
@@ -32,11 +32,11 @@ import java.util.stream.Collectors;
  */
 public abstract class AbsMapperExtRelation<DTO extends AbsCreateDto, ENTITY, EXT_ID, EXT extends AbstractEntity<?>> {
 
-    private final AbsDtoModelMapper mapper;
+    private final AbsModelMapper mapper;
     private final Class<ENTITY> entityClass;
     private final Class<EXT> extClass;
 
-    public AbsMapperExtRelation(AbsDtoModelMapper mapper, Class<ENTITY> entityClass, Class<EXT> extClass) {
+    public AbsMapperExtRelation(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<EXT> extClass) {
         this.mapper = mapper;
         this.entityClass = entityClass;
         this.extClass = extClass;

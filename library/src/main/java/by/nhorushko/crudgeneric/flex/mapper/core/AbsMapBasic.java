@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.mapper.core;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 
 /**
  * Provides a simplified mapping configuration for straightforward object transformations.
@@ -11,7 +11,7 @@ import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
  * allowing for an automatic and seamless mapping process.
  * </p>
  * <p>
- * The {@code AbsMapSimple} class leverages {@link AbsDtoModelMapper} for the mapping process,
+ * The {@code AbsMapSimple} class leverages {@link AbsModelMapper} for the mapping process,
  * creating a type map between the specified source ({@code FROM}) and destination ({@code TO}) classes upon
  * instantiation. This preconfigured mapping behavior simplifies the setup required to convert between
  * common DTOs and entity models or between any two classes with matching field patterns.
@@ -20,12 +20,12 @@ import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
  * @param <FROM> the source object class from which data is mapped
  * @param <TO>   the destination object class to which data is mapped
  */
-public abstract class AbsMapSimple<FROM, TO> implements RegisterableMapper {
+public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
     protected final Class<FROM> fromClass;
     protected final Class<TO> toClass;
-    protected final AbsDtoModelMapper mapper;
+    protected final AbsModelMapper mapper;
 
-    public AbsMapSimple(AbsDtoModelMapper mapper, Class<FROM> dtoClass, Class<TO> entityClass) {
+    public AbsMapBasic(AbsModelMapper mapper, Class<FROM> dtoClass, Class<TO> entityClass) {
         this.mapper = mapper;
         this.fromClass = dtoClass;
         this.toClass = entityClass;

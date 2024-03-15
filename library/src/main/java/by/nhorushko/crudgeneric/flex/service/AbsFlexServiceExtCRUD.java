@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.mapper.AbsMapperExtRelation;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
@@ -51,7 +51,7 @@ public abstract class AbsFlexServiceExtCRUD<
     protected final Class<CREATE_DTO> createDtoClass;
 
 
-    public AbsFlexServiceExtCRUD(AbsDtoModelMapper mapper,
+    public AbsFlexServiceExtCRUD(AbsModelMapper mapper,
                                  REPOSITORY repository,
                                  Class<ENTITY> entityClass,
                                  Class<READ_DTO> readDtoClass,

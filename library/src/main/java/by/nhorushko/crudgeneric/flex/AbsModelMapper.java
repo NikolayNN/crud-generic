@@ -1,9 +1,12 @@
 package by.nhorushko.crudgeneric.flex;
 
+import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 
+import javax.persistence.EntityManager;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,9 +23,10 @@ import static java.util.stream.Collectors.toList;
  */
 @Getter
 @RequiredArgsConstructor
-public class AbsEntityModelMapper {
+public class AbsModelMapper {
 
     private final ModelMapper modelMapper;
+    private final EntityManager entityManager;
 
     /**
      * Maps an object of any type to a specified type.
@@ -66,5 +70,39 @@ public class AbsEntityModelMapper {
         return source.stream()
                 .map(o -> map(o, destinationType))
                 .collect(toList());
+    }
+
+    /**
+     * Retrieves a reference to an entity of a specified type based on the ID provided within a DTO.
+     * <p>
+     * This method is useful for operations where an entity reference is needed without the requirement
+     * of loading the full entity from the database. It is particularly beneficial in update scenarios
+     * where setting relationships based on the provided ID is sufficient.
+     * </p>
+     *
+     * @param dto              the DTO containing the ID of the entity
+     * @param destinationClass the class of the entity to which the reference is sought
+     * @param <T>              the type of the entity
+     * @return a reference to the entity of type {@code T}, or throws an exception if no such entity exists
+     */
+    public <T extends AbstractEntity<?>> T reference(AbstractDto<?> dto, Class<T> destinationClass) {
+        return referenceById(dto.getId(), destinationClass);
+    }
+
+    /**
+     * Retrieves a reference to an entity of a specified type based on a given ID.
+     * <p>
+     * Similar to {@code reference}, but this method directly accepts an entity ID instead of a DTO.
+     * This allows for greater flexibility in retrieving entity references when the DTO is not available
+     * or when working with raw IDs.
+     * </p>
+     *
+     * @param id               the ID of the entity
+     * @param destinationClass the class of the entity to which the reference is sought
+     * @param <T>              the type of the entity
+     * @return a reference to the entity of type {@code T}, or throws an exception if no such entity exists
+     */
+    public <T extends AbstractEntity<?>> T referenceById(Object id, Class<T> destinationClass) {
+        return entityManager.getReference(destinationClass, id);
     }
 }

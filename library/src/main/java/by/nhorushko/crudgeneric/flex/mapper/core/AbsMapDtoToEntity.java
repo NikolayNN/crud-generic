@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.mapper.core;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 
@@ -18,7 +18,7 @@ import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
  */
 public abstract class AbsMapDtoToEntity<DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> extends AbsMapBaseDtoToEntity<DTO, ENTITY> {
 
-    public AbsMapDtoToEntity(AbsDtoModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
+    public AbsMapDtoToEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
         super(mapper, dtoClass, entityClass);
     }
 }

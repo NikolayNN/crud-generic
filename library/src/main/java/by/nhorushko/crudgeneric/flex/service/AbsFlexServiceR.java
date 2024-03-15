@@ -1,15 +1,13 @@
 package by.nhorushko.crudgeneric.flex.service;
 
 import by.nhorushko.crudgeneric.exception.AppNotFoundException;
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import lombok.Getter;
-import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +19,7 @@ import static java.lang.String.format;
  * <p>
  * This abstract class is designed to encapsulate common read-only operations for entities, including fetching
  * by ID and checking for existence. It utilizes Spring Data JPA's {@link JpaRepository} for repository operations
- * and leverages a custom {@link AbsDtoModelMapper} for DTO to entity mapping. It is generic and can be used with
+ * and leverages a custom {@link AbsModelMapper} for DTO to entity mapping. It is generic and can be used with
  * any entity that extends {@link AbstractEntity} and any DTO that extends {@link AbstractDto}.
  * </p>
  * <p>
@@ -46,7 +44,7 @@ public abstract class AbsFlexServiceR<
         READ_DTO extends AbstractDto<ID>,
         REPOSITORY extends JpaRepository<ENTITY, ID>> {
 
-    protected final AbsDtoModelMapper mapper;
+    protected final AbsModelMapper mapper;
 
     protected final REPOSITORY repository;
 
@@ -56,7 +54,7 @@ public abstract class AbsFlexServiceR<
     @Getter
     protected final Class<READ_DTO> readDtoClass;
 
-    public AbsFlexServiceR(AbsDtoModelMapper mapper,
+    public AbsFlexServiceR(AbsModelMapper mapper,
                            REPOSITORY repository,
                            Class<ENTITY> entityClass,
                            Class<READ_DTO> readDtoClass) {
@@ -132,7 +130,7 @@ public abstract class AbsFlexServiceR<
      * Maps an entity to its corresponding READ_DTO representation.
      * <p>
      * This protected method is used internally to convert an entity to its corresponding DTO representation.
-     * It leverages the configured {@link AbsDtoModelMapper} for the conversion.
+     * It leverages the configured {@link AbsModelMapper} for the conversion.
      * </p>
      *
      * @param entity the entity to map

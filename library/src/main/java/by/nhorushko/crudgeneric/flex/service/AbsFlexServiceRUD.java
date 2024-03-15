@@ -1,13 +1,12 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.util.FieldCopyUtil;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.v2.domain.IdEntity;
 import lombok.Getter;
-import lombok.experimental.FieldNameConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
@@ -48,7 +47,7 @@ public abstract class AbsFlexServiceRUD<
     @Getter
     protected final Class<UPDATE_DTO> updateDtoClass;
 
-    public AbsFlexServiceRUD(AbsDtoModelMapper mapper, REPOSITORY repository,
+    public AbsFlexServiceRUD(AbsModelMapper mapper, REPOSITORY repository,
                              Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass) {
         super(mapper, repository, entityClass, readDtoClass);
         this.updateDtoClass = updateDtoClass;

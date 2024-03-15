@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.config;
 
-import by.nhorushko.crudgeneric.flex.AbsDtoModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import org.modelmapper.ModelMapper;
@@ -59,8 +59,8 @@ public class AbsGenericCrudConfiguration {
      * @return An instance of AbsDtoModelMapper.
      */
     @Bean
-    public AbsDtoModelMapper absModelMapper(ModelMapper modelMapper, EntityManager entityManager) {
-        return new AbsDtoModelMapper(modelMapper, entityManager);
+    public AbsModelMapper absModelMapper(ModelMapper modelMapper, EntityManager entityManager) {
+        return new AbsModelMapper(modelMapper, entityManager);
     }
 
 
