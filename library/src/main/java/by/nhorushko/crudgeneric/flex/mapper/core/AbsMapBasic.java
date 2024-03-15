@@ -1,7 +1,9 @@
 package by.nhorushko.crudgeneric.flex.mapper.core;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeMap;
+import org.modelmapper.builder.ConfigurableConditionExpression;
 
 /**
  * Provides a simplified mapping configuration for straightforward object transformations.
@@ -33,7 +35,7 @@ public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
     }
 
     @Override
-    public void register() {
+    public final void register() {
         initMapper();
     }
 
@@ -54,30 +56,50 @@ public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
      * @return The {@link TypeMap} object representing the mapping configuration established between
      * the source and destination types. This object can be further customized if needed.
      */
-    protected TypeMap<FROM, TO> configureMapper() {
-        return mapper.getModelMapper().createTypeMap(fromClass, toClass);
+    protected final TypeMap<FROM, TO> configureMapper() {
+        TypeMap<FROM, TO> typeMap = mapper.getModelMapper().createTypeMap(fromClass, toClass);
+        typeMap.addMappings(this::setupMappingRules);
+        customizeTypeMap(typeMap);
+        return typeMap;
     }
 
     /**
-     * Offers a hook for additional customizations of the type map between source and destination classes.
+     * Defines additional mapping rules for the type map configuration.
      * <p>
-     * This method is called after the initial type map configuration established by {@link #configureMapper()}.
-     * It provides an opportunity to apply further customizations to the {@link TypeMap} object, such as specifying
-     * custom converters, conditionals, or property mappings that are not covered by the basic field-to-field mapping.
+     * This method is designed to be overridden by subclasses to specify custom mapping rules,
+     * such as excluding fields from the mapping or employing custom converters for specific properties.
+     * By default, it does not perform any actions, serving as a template method for customization.
      * </p>
      * <p>
-     * Override this method in subclasses to implement specific mapping customizations required by your application's
-     * data transformation logic. This flexibility allows for precise control over how data is mapped from the source
-     * to the destination, accommodating complex scenarios beyond straightforward field name matches.
-     * </p>
-     * <p>
-     * For example, you might use this method to add custom converters that handle complex data types, transformations
-     * that involve logic beyond mere copying, or conditional mappings that only apply under certain circumstances.
+     * To exclude fields from the mapping, use the {@code mapper} parameter's methods, such as {@code skip()}.
+     * For example, to exclude a field named 'exampleField' from being mapped, you could call
+     * {@code mapper.skip(source.getExampleField())}.
      * </p>
      *
-     * @param typeMap The {@link TypeMap} object that was created by {@link #configureMapper()} and represents the
-     *                mapping configuration between the source ({@code FROM}) and destination ({@code TO}) classes.
-     *                This type map can be further customized within this method.
+     * @param mapper The {@link ConfigurableConditionExpression} allowing specific configuration
+     *               of the mapping rules between source and destination types.
+     */
+    protected void setupMappingRules(ConfigurableConditionExpression<FROM, TO> mapper) {
+    }
+
+
+    /**
+     * Allows further customization of the established type map.
+     * <p>
+     * Once the basic type map is configured through {@link #configureMapper()}, this method
+     * provides a hook for additional customizations. It can be overridden in subclasses to adjust
+     * the mapping configuration, for example, by adding custom converters, specifying conditional
+     * mappings, or other advanced mapping configurations that {@link ModelMapper} supports.
+     * </p>
+     * <p>
+     * This method is particularly useful for complex mapping scenarios where the default
+     * field-to-field mapping strategy needs to be supplemented with more sophisticated
+     * customization to accurately reflect the domain logic.
+     * </p>
+     *
+     * @param typeMap The {@link TypeMap} object representing the mapping configuration between
+     *                the source and destination types. This object is fully initialized and can
+     *                be modified to achieve the desired mapping behavior.
      */
     protected void customizeTypeMap(TypeMap<FROM, TO> typeMap) {
     }

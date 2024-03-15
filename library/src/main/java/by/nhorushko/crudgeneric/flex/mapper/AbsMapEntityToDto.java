@@ -41,11 +41,6 @@ public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO ex
         this.dtoClass = dtoClass;
     }
 
-    @Override
-    public void register() {
-        this.configureMapper();
-    }
-
     /**
      * Abstract method to create a DTO from an entity. Implement this method in subclasses to define
      * the conversion logic from an entity instance to its corresponding DTO, especially considering
@@ -56,19 +51,9 @@ public abstract class AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO ex
      */
     protected abstract DTO create(ENTITY from);
 
-    /**
-     * Configures the ModelMapper with custom conditions and converters for mapping from entities to DTOs.
-     * <p>
-     * This method sets up the type map in the ModelMapper and specifies a converter that uses the {@code create}
-     * method to perform the actual conversion. This setup is particularly important for DTOs with final fields,
-     * ensuring their proper initialization during the mapping process.
-     * </p>
-     * see also {@link AbsMapBasic#configureMapper()}
-     */
-    protected TypeMap<ENTITY, DTO> configureMapper() {
-        return mapper.getModelMapper()
-                .createTypeMap(entityClass, dtoClass)
-                .setCondition(new AbstractCondition<>() {
+    @Override
+    protected void customizeTypeMap(TypeMap<ENTITY, DTO> typeMap) {
+        typeMap.setCondition(new AbstractCondition<>() {
                     @Override
                     public boolean applies(MappingContext<Object, Object> context) {
                         return true;

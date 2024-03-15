@@ -43,19 +43,9 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
     protected void mapSpecificFields(DTO source, ENTITY destination) {
     }
 
-    /**
-     * Configures the {@link ModelMapper} for DTO to entity mapping.
-     * <p>
-     * This method sets up the type mapping between DTO and entity classes and applies a post-converter
-     * for handling specific field mappings.
-     * </p>
-     *
-     * @return The {@link TypeMap}
-     */
-    protected TypeMap<DTO, ENTITY> configureMapper() {
-        return mapper.getModelMapper()
-                .createTypeMap(dtoClass, entityClass)
-                .setPostConverter(createConverterDtoToEntity());
+    @Override
+    protected void customizeTypeMap(TypeMap<DTO, ENTITY> typeMap) {
+        typeMap.setPostConverter(createConverterDtoToEntity());
     }
 
     /**
