@@ -7,9 +7,6 @@ import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import org.modelmapper.TypeMap;
-import org.modelmapper.builder.ConfigurableConditionExpression;
-import org.springframework.context.annotation.Bean;
 
 /**
  * Base configuration class for establishing mappings between various types of Data Transfer Objects (DTOs) and entities.
