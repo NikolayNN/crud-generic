@@ -39,6 +39,12 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
         this.updateDtoClass = updateDtoClass;
         this.readDtoClass = readDtoClass;
         this.entityClass = entityClass;
+
+        mapperCreateDtoToEntity();
+        mapperUpdateDtoToEntity();
+        mapperReadDtoToEntity();
+        mapperEntityToReadDto();
+        mapperEntityToEntity();
     }
 
     /**
@@ -50,7 +56,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
      *
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for create DTO to entity conversion.
      */
-    @Bean
     public AbsMapBasic<CREATE_DTO, ENTITY> mapperCreateDtoToEntity() {
         return mapperCreateDtoToEntity(this.mapper, createDtoClass, entityClass);
     }
@@ -66,7 +71,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
      *
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for update DTO to entity conversion.
      */
-    @Bean
     public AbsMapBasic<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity() {
         return mapperUpdateDtoToEntity(this.mapper, updateDtoClass, entityClass);
     }
@@ -82,7 +86,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
      *
      * @return A configured instance of {@link AbsMapBaseDtoToEntity} for read DTO to entity conversion.
      */
-    @Bean
     public AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity() {
         return mapperReadDtoToEntity(this.mapper, readDtoClass, entityClass);
     }
@@ -98,7 +101,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
      *
      * @return A configured instance of {@link AbsMapEntityToDto} for entity to read DTO conversion.
      */
-    @Bean
     public AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto() {
         return mapperEntityToReadDto(this.mapper, entityClass, readDtoClass);
     }
@@ -121,7 +123,6 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
      *
      * @return An instance of {@link AbsMapBasic} configured for self-mapping of the entity class.
      */
-    @Bean
     public AbsMapBasic<ENTITY, ENTITY> mapperEntityToEntity() {
         return mapperEntityToEntity(this.mapper, entityClass);
     }

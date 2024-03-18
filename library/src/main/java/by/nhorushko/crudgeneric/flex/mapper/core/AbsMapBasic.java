@@ -31,6 +31,7 @@ public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
         this.mapper = mapper;
         this.fromClass = dtoClass;
         this.toClass = entityClass;
+        register();
     }
 
     @Override
