@@ -90,9 +90,4 @@ public class AbsGenericCrudConfiguration {
     public AbsTypeMapChecker crudAbstractGenericMappingChecker(List<? extends AbsFlexServiceR<?, ?, ?, ?>> services, ModelMapper modelMapper) {
         return new AbsTypeMapChecker(services, modelMapper);
     }
-
-    @Bean
-    public AbsMapperRegister absMapperRegister(List<? extends RegisterableMapper> mappers) {
-        return new AbsMapperRegister(mappers);
-    }
 }
