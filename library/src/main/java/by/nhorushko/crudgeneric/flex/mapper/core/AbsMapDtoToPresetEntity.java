@@ -23,11 +23,8 @@ import javax.persistence.EntityManager;
  */
 public abstract class AbsMapDtoToPresetEntity<DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> extends AbsMapBaseDtoToEntity<DTO, ENTITY> {
 
-    private final EntityManager entityManager;
-
-    public AbsMapDtoToPresetEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass, EntityManager entityManager) {
+    public AbsMapDtoToPresetEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
         super(mapper, dtoClass, entityClass);
-        this.entityManager = entityManager;
     }
 
     /**
@@ -44,7 +41,7 @@ public abstract class AbsMapDtoToPresetEntity<DTO extends AbstractDto<?>, ENTITY
      */
     @Override
     protected ENTITY handleAfterMapSpecificFields(DTO source, ENTITY destination) {
-        ENTITY actualDbEntity = entityManager.find(entityClass, ((AbstractDto<?>) source).getId());
+        ENTITY actualDbEntity = mapper.getEntityManager().find(entityClass, ((AbstractDto<?>) source).getId());
         return mergeActualAndReceived(actualDbEntity, destination);
     }
 
