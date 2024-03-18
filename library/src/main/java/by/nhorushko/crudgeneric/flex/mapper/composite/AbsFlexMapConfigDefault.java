@@ -54,7 +54,9 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      * @param source      The CREATE DTO containing the source data.
      * @param destination The target entity to which the data should be mapped.
      */
-    protected abstract void mapSpecificFieldsCreateDtoToEntity(AbsModelMapper mapper, CREATE_DTO source, ENTITY destination);
+    protected void mapSpecificFieldsCreateDtoToEntity(AbsModelMapper mapper, CREATE_DTO source, ENTITY destination){
+
+    }
 
     @Override
     protected AbsMapBasic<UPDATE_DTO, ENTITY> mapperUpdateDtoToEntity(AbsModelMapper mapper, Class<UPDATE_DTO> updateDtoClass, Class<ENTITY> entityClass) {
@@ -79,7 +81,8 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      * @param source      The UPDATE DTO containing the data for the update.
      * @param destination The entity that needs to be updated with the DTO's data.
      */
-    protected abstract void mapSpecificFieldsUpdateDtoToEntity(AbsModelMapper mapper, UPDATE_DTO source, ENTITY destination);
+    protected void mapSpecificFieldsUpdateDtoToEntity(AbsModelMapper mapper, UPDATE_DTO source, ENTITY destination) {
+    }
 
     @Override
     protected AbsMapBasic<READ_DTO, ENTITY> mapperReadDtoToEntity(AbsModelMapper mapper, Class<READ_DTO> readDtoClass, Class<ENTITY> entityClass) {
@@ -104,7 +107,8 @@ public abstract class AbsFlexMapConfigDefault<CREATE_DTO extends AbsBaseDto, UPD
      * @param source      The source READ DTO from which data is being mapped.
      * @param destination The entity to which data from the DTO is mapped.
      */
-    protected abstract void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination);
+    protected void mapSpecificFieldsReadDtoToEntity(AbsModelMapper mapper, READ_DTO source, ENTITY destination) {
+    }
 
     @Override
     protected AbsMapBasic<ENTITY, READ_DTO> mapperEntityToReadDto(AbsModelMapper mapper, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass) {
