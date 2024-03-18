@@ -27,7 +27,7 @@ import javax.persistence.EntityManager;
  * @param <ENTITY> the type of the entity, extending {@link AbstractEntity}, which is targeted for updates
  */
 public abstract class AbsMapUpdateDtoToPresetEntity<DTO extends AbsUpdateDto<?>, ENTITY extends AbstractEntity<?>> extends AbsMapDtoToPresetEntity<DTO, ENTITY> {
-    public AbsMapUpdateDtoToPresetEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass, EntityManager entityManager) {
-        super(mapper, dtoClass, entityClass, entityManager);
+    public AbsMapUpdateDtoToPresetEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
+        super(mapper, dtoClass, entityClass);
     }
 }
