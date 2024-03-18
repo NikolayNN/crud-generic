@@ -44,8 +44,12 @@ public abstract class AbsMapDtoToPresetEntity<DTO extends AbstractDto<?>, ENTITY
      */
     @Override
     protected ENTITY handleAfterMapSpecificFields(DTO source, ENTITY destination) {
-        ENTITY actualDestination = entityManager.find(entityClass, ((AbstractDto<?>)source).getId());
-        mapper.getModelMapper().map(destination, actualDestination);
-        return actualDestination;
+        ENTITY actualDbEntity = entityManager.find(entityClass, ((AbstractDto<?>) source).getId());
+        return mergeActualAndReceived(actualDbEntity, destination);
+    }
+
+    protected ENTITY mergeActualAndReceived(ENTITY actual, ENTITY received) {
+        mapper.getModelMapper().map(received, actual);
+        return actual;
     }
 }
