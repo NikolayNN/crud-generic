@@ -23,14 +23,14 @@ public abstract class AbsMapperBase<FROM, TO> {
         this.dtoClass = dtoClass;
     }
 
-    protected  <T> T map(Object source, Class<T> destinationType) {
+    public <T> T map(Object source, Class<T> destinationType) {
         if (source == null) {
             return null;
         }
         return modelMapper.map(source, destinationType);
     }
 
-    protected  <T> List<T> mapAll(Collection<?> source, Class<T> destinationType) {
+    public <T> List<T> mapAll(Collection<?> source, Class<T> destinationType) {
         if (source == null) {
             return null;
         }

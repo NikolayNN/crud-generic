@@ -4,11 +4,10 @@ import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.service.AbsServiceRUD;
 import jakarta.servlet.http.HttpServletRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
-
 
 public abstract class AbsControllerRUD<
         ID,
@@ -23,6 +22,7 @@ public abstract class AbsControllerRUD<
     }
 
     @DeleteMapping("{id}")
+    @Operation(summary = "Delete by id")
     public ResponseEntity<Void> delete(@PathVariable("id") ID id, HttpServletRequest request) {
         checkAccessDeleteBefore(id, request);
         service.delete(id);

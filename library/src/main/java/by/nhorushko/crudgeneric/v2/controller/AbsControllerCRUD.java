@@ -4,6 +4,7 @@ import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.service.AbsServiceCRUD;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 
-//todo Add @Valid annotation to methods with request body
 public abstract class AbsControllerCRUD<
         ID,
         DTO extends AbstractDto<ID>,
@@ -25,6 +25,7 @@ public abstract class AbsControllerCRUD<
     }
 
     @PostMapping
+    @Operation(summary = "Save new")
     public ResponseEntity<DTO_VIEW> save(@RequestBody @Valid DTO obj,
                                          SETTINGS settings,
                                          HttpServletRequest request) {

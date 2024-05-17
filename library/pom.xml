@@ -79,9 +79,9 @@
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
+            <scope>provided</scope>
             <version>3.0.2</version>
         </dependency>
-
 
         <dependency>
             <groupId>com.github.NikolayNN</groupId>
@@ -128,6 +128,7 @@
                     <target>${java.version}</target>
                     <compilerArgs>
                         <arg>-g</arg>
+                        <arg>-parameters</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
