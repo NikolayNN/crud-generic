@@ -86,7 +86,7 @@
         <dependency>
             <groupId>com.github.NikolayNN</groupId>
             <artifactId>filter-specifications-lib</artifactId>
-            <version>3.2-javax</version>
+            <version>3.2.1-javax</version>
         </dependency>
 
         <dependency>
