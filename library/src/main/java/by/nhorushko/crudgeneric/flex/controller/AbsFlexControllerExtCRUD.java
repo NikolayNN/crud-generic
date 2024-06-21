@@ -6,8 +6,9 @@ import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceExtCRUD;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Abstract controller providing extended CRUD operations for entities with relational dependencies.

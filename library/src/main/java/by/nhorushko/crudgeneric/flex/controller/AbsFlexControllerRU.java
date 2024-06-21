@@ -5,12 +5,13 @@ import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 /**
  * Provides Read and Update functionality for a specific entity type.

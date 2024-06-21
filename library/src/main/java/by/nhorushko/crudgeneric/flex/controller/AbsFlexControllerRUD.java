@@ -5,10 +5,11 @@ import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Controller providing Read, Update, and Delete (RUD) operations for a specific entity type.

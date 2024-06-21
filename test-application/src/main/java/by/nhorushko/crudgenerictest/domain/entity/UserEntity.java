@@ -1,7 +1,7 @@
 package by.nhorushko.crudgenerictest.domain.entity;
 
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;

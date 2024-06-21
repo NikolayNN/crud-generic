@@ -1,10 +1,10 @@
 package by.nhorushko.crudgenerictest.domain.entity;
 
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import jakarta.persistence.*;
+import javax.persistence.*;
 import lombok.*;
 
-import static jakarta.persistence.GenerationType.IDENTITY;
+import static javax.persistence.GenerationType.IDENTITY;
 
 
 @Entity

@@ -3,7 +3,7 @@ package by.nhorushko.crudgenerictest.service;
 import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.Tracker;
 import by.nhorushko.crudgenerictest.domain.entity.TrackerEntity;
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

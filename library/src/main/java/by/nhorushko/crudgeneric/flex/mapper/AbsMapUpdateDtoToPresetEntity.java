@@ -4,7 +4,8 @@ import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapDtoToPresetEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import jakarta.persistence.EntityManager;
+
+import javax.persistence.EntityManager;
 
 /**
  * Abstract class for mapping update DTOs into existing, persisted entities.

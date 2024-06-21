@@ -1,9 +1,9 @@
 package by.nhorushko.crudgenerictest.domain.entity;
 
 import by.nhorushko.crudgeneric.domain.AbstractEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -5,7 +5,7 @@ import by.nhorushko.crudgeneric.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.service.RudGenericService;
 import by.nhorushko.filterspecification.FilterSpecificationAbstract;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;

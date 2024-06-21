@@ -1,7 +1,7 @@
 package by.nhorushko.crudgenerictest.controller;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

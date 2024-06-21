@@ -5,7 +5,7 @@ import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

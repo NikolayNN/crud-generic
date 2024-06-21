@@ -4,7 +4,7 @@ import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.MockADescription;
 import by.nhorushko.crudgenerictest.domain.dto.MockADto;
 import by.nhorushko.crudgenerictest.domain.entity.MockAEntity;
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

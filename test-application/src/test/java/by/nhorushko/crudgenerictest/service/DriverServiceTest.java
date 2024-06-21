@@ -2,7 +2,7 @@ package by.nhorushko.crudgenerictest.service;
 
 import by.nhorushko.crudgenerictest.domain.dto.Driver;
 import by.nhorushko.crudgenerictest.domain.entity.DriverEntity;
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

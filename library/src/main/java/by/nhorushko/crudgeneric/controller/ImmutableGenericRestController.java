@@ -4,11 +4,11 @@ import by.nhorushko.crudgeneric.domain.AbstractDto;
 import by.nhorushko.crudgeneric.domain.SettingsVoid;
 import by.nhorushko.crudgeneric.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.service.ImmutableGenericService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
