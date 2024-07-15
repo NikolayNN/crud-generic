@@ -85,8 +85,8 @@ public abstract class AbsFlexServiceRUD<
 
     private READ_DTO runUpdate(AbstractDto<ENTITY_ID> dto) {
         checkId(dto);
+        beforeUpdateHook(dto);
         ENTITY newValue = mapEntity(dto);
-        beforeUpdateHook(newValue);
         ENTITY actual = repository.save(newValue);
         READ_DTO actualDto = mapReadDto(actual);
         afterUpdateHook(actualDto);
@@ -94,14 +94,14 @@ public abstract class AbsFlexServiceRUD<
     }
 
     /**
-     * Hook method called before an entity is updated.
+     * Hook method called before an DTO is updated.
      * <p>
      * Override this method in subclasses to implement custom logic to be executed before updating an entity.
      * </p>
      *
-     * @param newValue the entity about to be updated
+     * @param dto the entity about to be updated
      */
-    protected void beforeUpdateHook(ENTITY newValue) {
+    protected void beforeUpdateHook(AbstractDto<ENTITY_ID> dto) {
     }
 
     /**
