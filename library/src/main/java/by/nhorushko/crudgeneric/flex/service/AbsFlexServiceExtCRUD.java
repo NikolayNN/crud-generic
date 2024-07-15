@@ -130,44 +130,11 @@ public abstract class AbsFlexServiceExtCRUD<
         entities.forEach(e -> {
             if (!e.isNew()) throw new IllegalArgumentException(wrongIdMessage(e.getId()));
         });
-        beforeSaveAllHook(relationId, dtos);
+        dtos.forEach(dto -> beforeSaveHook(relationId, dto));
         entities = repository.saveAll(entities);
-        List<READ_DTO> actual = mapAllReadDto(entities);
-        afterSaveAllHook(relationId, dtos);
-        return actual;
-    }
-
-    /**
-     * Hook method called before a collection of new entities, each related to another specified entity, are saved.
-     * <p>
-     * This method provides a mechanism for implementing custom logic before the save operation of a collection
-     * of new entities associated with another entity identified by {@code relationId}. It can be particularly
-     * useful for performing bulk validations, preprocessing of the collection of DTOs, or modifying the DTOs
-     * before they are mapped to entities. This pre-save processing can take into account the specific relationship
-     * to the other entity, enabling more complex data integrity checks or default value settings.
-     * </p>
-     *
-     * @param relationId the identifier of the related entity to which each new entity in the collection is associated
-     * @param dtos       the collection of DTOs containing the data for the new entities
-     */
-    protected void beforeSaveAllHook(EXT_ID relationId, Collection<CREATE_DTO> dtos) {
-    }
-
-    /**
-     * Hook method called after a collection of new entities, each related to another specified entity, are saved and mapped to DTOs.
-     * <p>
-     * This method serves as a hook for executing custom logic after a collection of entities has been saved and
-     * mapped back to their respective READ_DTOs. This could involve additional processing of the saved entities,
-     * such as logging, triggering events, or further data manipulation based on their relationship to another
-     * entity identified by {@code relationId}. This post-save processing is especially relevant for operations
-     * that might affect or be affected by the entity relationship, such as updating related entities or caching.
-     * </p>
-     *
-     * @param relationId the identifier of the related entity to which each saved entity in the collection is associated
-     * @param dtos       the collection of DTOs that were used to create the new entities, potentially useful for
-     *                   post-save operations that require access to the original data
-     */
-    protected void afterSaveAllHook(EXT_ID relationId, Collection<CREATE_DTO> dtos) {
+        List<READ_DTO> actualList = mapAllReadDto(entities);
+        actualList.forEach(actual -> afterSaveHook(relationId, actual));
+        return actualList;
     }
 
     private String wrongIdMessage(ENTITY_ID id) {
