@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.v2.pageable;
 
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.util.PageableUtils;
 import by.nhorushko.crudgeneric.util.SpecificationUtils;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
@@ -14,27 +15,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * use
- * @see AbsFlexPagingAndSortingService
- */
-@Deprecated()
-public abstract class AbsPagingAndSortingService<
+public abstract class AbsFlexPagingAndSortingService<
         ID,
         DTO extends AbstractDto<ID>,
         ENTITY extends AbstractEntity<ID>,
         SPECS extends AbsFilterSpecification<ENTITY>> {
 
     protected final JpaSpecificationExecutor<ENTITY> repository;
-    protected final AbsMapperDto<ENTITY, DTO> mapper;
+    protected final AbsModelMapper mapper;
+    protected final Class<DTO> dtoClass;
     protected final SPECS filterSpecs;
 
-    public AbsPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository,
-                                      AbsMapperDto<ENTITY, DTO> mapper,
-                                      SPECS filterSpecs) {
+    public AbsFlexPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository,
+                                          AbsModelMapper mapper,
+                                          Class<DTO> dtoClass,
+                                          SPECS filterSpecs) {
         this.repository = repository;
         this.mapper = mapper;
         this.filterSpecs = filterSpecs;
+        this.dtoClass = dtoClass;
     }
 
     protected Specification<ENTITY> buildSpecs(PageFilterRequest pageFilterRequest) {
@@ -86,10 +85,10 @@ public abstract class AbsPagingAndSortingService<
         Pageable pageable = PageableUtils.buildPageRequest(request.getPage(), request.getPageSize(), filterSpecs.handleSort(request));
         if (request.getFilterGroup().isEmpty()) {
             return repository.findAll(null, pageable)
-                    .map(mapper::toDto);
+                    .map(entity -> mapper.map(entity, dtoClass));
         } else {
             return repository.findAll(buildSpecs(request), pageable)
-                    .map(mapper::toDto);
+                    .map(entity -> mapper.map(entity, dtoClass));
         }
     }
 }
