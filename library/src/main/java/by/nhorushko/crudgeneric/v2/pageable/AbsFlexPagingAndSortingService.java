@@ -1,11 +1,9 @@
 package by.nhorushko.crudgeneric.v2.pageable;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.util.PageableUtils;
 import by.nhorushko.crudgeneric.util.SpecificationUtils;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import by.nhorushko.crudgeneric.v2.mapper.AbsMapperDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,18 +20,11 @@ public abstract class AbsFlexPagingAndSortingService<
         SPECS extends AbsFilterSpecification<ENTITY>> {
 
     protected final JpaSpecificationExecutor<ENTITY> repository;
-    protected final AbsModelMapper mapper;
-    protected final Class<DTO> dtoClass;
     protected final SPECS filterSpecs;
 
-    public AbsFlexPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository,
-                                          AbsModelMapper mapper,
-                                          Class<DTO> dtoClass,
-                                          SPECS filterSpecs) {
+    public AbsFlexPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository, SPECS filterSpecs) {
         this.repository = repository;
-        this.mapper = mapper;
         this.filterSpecs = filterSpecs;
-        this.dtoClass = dtoClass;
     }
 
     protected Specification<ENTITY> buildSpecs(PageFilterRequest pageFilterRequest) {
@@ -71,7 +62,6 @@ public abstract class AbsFlexPagingAndSortingService<
         return resultSpec;
     }
 
-    protected abstract Optional<Specification<ENTITY>> buildSpecification(PageFilterRequest.Filter filter);
 
     private Specification<ENTITY> concat(Specification<ENTITY>[] specifications, PageFilterRequest.ConcatCondition condition) {
         if (condition == PageFilterRequest.ConcatCondition.AND) {
@@ -85,11 +75,15 @@ public abstract class AbsFlexPagingAndSortingService<
         Pageable pageable = PageableUtils.buildPageRequest(request.getPage(), request.getPageSize(), filterSpecs.handleSort(request));
         if (request.getFilterGroup().isEmpty()) {
             return repository.findAll(null, pageable)
-                    .map(entity -> mapper.map(entity, dtoClass));
+                    .map(this::toDto);
         } else {
             return repository.findAll(buildSpecs(request), pageable)
-                    .map(entity -> mapper.map(entity, dtoClass));
+                    .map(this::toDto);
         }
     }
+
+    protected abstract Optional<Specification<ENTITY>> buildSpecification(PageFilterRequest.Filter filter);
+
+    protected abstract DTO toDto(ENTITY entity);
 }
 
