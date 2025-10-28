@@ -1,11 +1,7 @@
 package by.nhorushko.crudgeneric.v2.pageable;
 
-import by.nhorushko.crudgeneric.util.PageableUtils;
-import by.nhorushko.crudgeneric.util.SpecificationUtils;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -60,26 +56,6 @@ public abstract class AbsFlexPagingAndSortingService<
         }
 
         return resultSpec;
-    }
-
-
-    private Specification<ENTITY> concat(Specification<ENTITY>[] specifications, PageFilterRequest.ConcatCondition condition) {
-        if (condition == PageFilterRequest.ConcatCondition.AND) {
-            return SpecificationUtils.buildAndSpecs(specifications);
-        } else {
-            return SpecificationUtils.buildOrSpecs(specifications);
-        }
-    }
-
-    public Page<DTO> page(PageFilterRequest request) {
-        Pageable pageable = PageableUtils.buildPageRequest(request.getPage(), request.getPageSize(), filterSpecs.handleSort(request));
-        if (request.getFilterGroup().isEmpty()) {
-            return repository.findAll(null, pageable)
-                    .map(this::toDto);
-        } else {
-            return repository.findAll(buildSpecs(request), pageable)
-                    .map(this::toDto);
-        }
     }
 
     protected abstract Optional<Specification<ENTITY>> buildSpecification(PageFilterRequest.Filter filter);
