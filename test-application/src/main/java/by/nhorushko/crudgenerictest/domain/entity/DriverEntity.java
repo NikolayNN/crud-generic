@@ -2,11 +2,13 @@ package by.nhorushko.crudgenerictest.domain.entity;
 
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
 import javax.persistence.*;
+
+
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.antlr.v4.runtime.misc.NotNull;
+
 
 @Entity
 @Data
@@ -20,7 +22,7 @@ public class DriverEntity implements AbstractEntity<Long> {
     Long id;
     String name;
 
-    @NotNull
+
     @OneToOne
     @JoinColumn(name = "user_id")
     UserEntity user;
