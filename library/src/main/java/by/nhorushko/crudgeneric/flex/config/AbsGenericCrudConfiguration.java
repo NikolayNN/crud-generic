@@ -4,6 +4,7 @@ import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,27 +67,27 @@ public class AbsGenericCrudConfiguration {
     /**
      * Creates and configures an {@link AbsTypeMapChecker} bean to verify the correctness of ModelMapper type mappings.
      * <p>
-     * This bean initializer method constructs an instance of {@link AbsTypeMapChecker}, which is responsible for
-     * checking that all necessary type mappings between DTOs and entities are correctly configured in ModelMapper.
-     * This verification process is crucial for ensuring that the application's data mapping configurations are set up
-     * properly before the application fully starts, preventing runtime errors related to missing or incorrect mappings.
+     * Behavior is controlled by an optional {@link AbsCrudCustomizer} bean: if the application registers one,
+     * the {@code typeMapCheckerEnabled} flag from that customizer determines whether validation runs. If no
+     * customizer bean is registered, the default ({@code typeMapCheckerEnabled = true}) is used.
      * </p>
      * <p>
-     * The {@link AbsTypeMapChecker} operates at the end of the application's startup phase, thanks to its implementation
-     * of {@link SmartLifecycle}, which allows it to have control over its startup sequence within the Spring ApplicationContext.
-     * If any mappings are missing, the application will fail to start, providing an early warning to developers about
-     * configuration issues.
+     * The {@link AbsTypeMapChecker} bean is always registered to preserve {@link SmartLifecycle} ordering.
+     * When the customizer disables validation, the bean's {@code start()} method becomes a no-op.
      * </p>
      *
-     * @param services    A list of services extending {@link AbsFlexServiceR}. These services are checked by the
-     *                    {@link AbsTypeMapChecker} to ensure that each has the necessary type mappings configured
-     *                    for their DTO and entity classes.
-     * @param modelMapper The {@link ModelMapper} instance used throughout the application for DTO to entity mappings.
-     *                    This is the same ModelMapper instance that will be checked by the {@link AbsTypeMapChecker}.
-     * @return An initialized {@link AbsTypeMapChecker} bean ready to verify the application's ModelMapper configurations.
+     * @param services            services subject to mapping validation.
+     * @param modelMapper         the application's {@link ModelMapper} instance.
+     * @param customizerProvider  optional provider for {@link AbsCrudCustomizer}.
+     * @return the registered {@link AbsTypeMapChecker} bean.
      */
     @Bean
-    public AbsTypeMapChecker crudAbstractGenericMappingChecker(List<? extends AbsFlexServiceR<?, ?, ?, ?>> services, ModelMapper modelMapper) {
-        return new AbsTypeMapChecker(services, modelMapper);
+    public AbsTypeMapChecker crudAbstractGenericMappingChecker(
+            List<? extends AbsFlexServiceR<?, ?, ?, ?>> services,
+            ModelMapper modelMapper,
+            ObjectProvider<AbsCrudCustomizer> customizerProvider) {
+        AbsCrudCustomizer customizer = customizerProvider.getIfAvailable(
+                () -> AbsCrudCustomizer.builder().build());
+        return new AbsTypeMapChecker(services, modelMapper, customizer.isTypeMapCheckerEnabled());
     }
 }
