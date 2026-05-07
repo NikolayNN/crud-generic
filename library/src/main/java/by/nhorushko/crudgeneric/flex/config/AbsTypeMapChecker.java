@@ -53,6 +53,8 @@ public class AbsTypeMapChecker implements SmartLifecycle {
         if (enabled) {
             checkMappers();
         }
+        // isRunning must be set after checkMappers(): on validation failure the
+        // exception aborts context startup and the bean stays not-running.
         isRunning = true;
     }
 

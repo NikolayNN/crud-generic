@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.ObjectProvider;
 
+import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import java.util.Collections;
 
 import static org.junit.Assert.assertTrue;
@@ -25,15 +26,24 @@ public class AbsGenericCrudConfigurationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void crudAbstractGenericMappingChecker_noCustomizer_defaultsToEnabled() {
         ObjectProvider<AbsCrudCustomizer> provider = emptyProvider();
 
-        AbsTypeMapChecker checker = configuration.crudAbstractGenericMappingChecker(
-                Collections.emptyList(), modelMapper, provider);
+        AbsFlexServiceR<?, ?, ?, ?> failingService = mock(AbsFlexServiceR.class);
+        when((Class) failingService.getEntityClass()).thenReturn(Object.class);
+        when((Class) failingService.getReadDtoClass()).thenReturn(String.class);
+        when(modelMapper.getTypeMap(any(), any())).thenReturn(null);
 
-        // start() with no services should not throw and should set running.
-        checker.start();
-        assertTrue(checker.isRunning());
+        AbsTypeMapChecker checker = configuration.crudAbstractGenericMappingChecker(
+                Collections.singletonList(failingService), modelMapper, provider);
+
+        try {
+            checker.start();
+            fail("Expected UnsupportedOperationException — the default customizer must enable validation");
+        } catch (UnsupportedOperationException expected) {
+            // ok
+        }
     }
 
     @Test
