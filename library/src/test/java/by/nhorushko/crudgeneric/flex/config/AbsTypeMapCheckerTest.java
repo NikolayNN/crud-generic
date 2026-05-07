@@ -8,6 +8,7 @@ import org.modelmapper.ModelMapper;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -37,7 +38,7 @@ public class AbsTypeMapCheckerTest {
             checker.start();
             fail("Expected UnsupportedOperationException");
         } catch (UnsupportedOperationException expected) {
-            // ok
+            assertFalse(checker.isRunning());
         }
     }
 
@@ -65,7 +66,7 @@ public class AbsTypeMapCheckerTest {
             checker.start();
             fail("Expected legacy constructor to default to enabled=true and throw");
         } catch (UnsupportedOperationException expected) {
-            // ok
+            assertFalse(checker.isRunning());
         }
     }
 }
