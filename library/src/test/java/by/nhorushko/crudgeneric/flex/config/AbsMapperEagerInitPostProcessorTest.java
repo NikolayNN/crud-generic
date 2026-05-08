@@ -28,6 +28,19 @@ public class AbsMapperEagerInitPostProcessorTest {
     }
 
     @Test
+    public void postProcessBeanFactory_flagOn_alreadyEagerMapperStaysEager() {
+        DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
+
+        BeanDefinition mapperBd = new RootBeanDefinition(StubMapperBaseBean.class);
+        mapperBd.setLazyInit(false);
+        bf.registerBeanDefinition("eagerMapper", mapperBd);
+
+        new AbsMapperEagerInitPostProcessor().postProcessBeanFactory(bf);
+
+        assertFalse(bf.getBeanDefinition("eagerMapper").isLazyInit());
+    }
+
+    @Test
     public void postProcessBeanFactory_flagOn_alsoFlipsAbsMapBasicSubtypes() {
         DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
 
@@ -124,6 +137,10 @@ public class AbsMapperEagerInitPostProcessorTest {
     }
 
     public static class StubAbsMapBasicBean extends AbsMapBasic<Object, Object> {
+        // null AbsModelMapper is intentional and safe: BDRPP only inspects bean
+        // definitions via getType(beanName, false) and never instantiates the bean,
+        // so AbsMapBasic's constructor (which would dereference the null mapper in
+        // register()) never runs. Do not change this without rethinking the test design.
         public StubAbsMapBasicBean() {
             super(null, Object.class, Object.class);
         }

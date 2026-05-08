@@ -26,8 +26,8 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
  * this surfaces as a {@code NoSuchMethodException}.
  * </p>
  * <p>
- * This processor walks the {@link BeanDefinitionRegistry} and clears
- * {@code lazyInit} on every bean whose resolved type is assignable to one of the
+ * This processor walks the {@link BeanDefinitionRegistry} and sets
+ * {@code lazyInit} to {@code false} on every bean whose resolved type is assignable to one of the
  * known mapper roots. Behavior is gated by
  * {@link AbsCrudCustomizer#isEagerTypeMapRegistration()} (default {@code true}).
  * In eager-init contexts the {@code setLazyInit(false)} call is a no-op.
@@ -67,7 +67,7 @@ public class AbsMapperEagerInitPostProcessor implements BeanDefinitionRegistryPo
 
     private static boolean isMapperType(Class<?> clazz) {
         return AbsMapperBase.class.isAssignableFrom(clazz)
-            || AbsMapBasic.class.isAssignableFrom(clazz)
+            || AbsMapBasic.class.isAssignableFrom(clazz)        // also implements RegisterableMapper; the next branch catches direct implementors that don't extend AbsMapBasic
             || AbstractMapper.class.isAssignableFrom(clazz)
             || RegisterableMapper.class.isAssignableFrom(clazz);
     }
