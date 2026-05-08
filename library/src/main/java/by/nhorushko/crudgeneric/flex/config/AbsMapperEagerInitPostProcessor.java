@@ -32,6 +32,12 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
  * {@link AbsCrudCustomizer#isEagerTypeMapRegistration()} (default {@code true}).
  * In eager-init contexts the {@code setLazyInit(false)} call is a no-op.
  * </p>
+ * <p>
+ * Co-existence with Spring Boot's {@code LazyInitializationBeanFactoryPostProcessor}: that
+ * processor only flips beans whose {@code lazyInit} is unset (null). Setting an explicit
+ * {@code false} here is sticky regardless of which BFPP runs first, so the eager flag survives
+ * the global {@code spring.main.lazy-initialization=true} switch.
+ * </p>
  */
 public class AbsMapperEagerInitPostProcessor implements BeanDefinitionRegistryPostProcessor {
 
