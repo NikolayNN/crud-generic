@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.flex.config;
 
+import by.nhorushko.crudgeneric.flex.mapper.composite.AbsFlexMapConfigAbstract;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.mapper.AbstractMapper;
@@ -15,15 +16,22 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
  * application runs with {@code spring.main.lazy-initialization=true}.
  * <p>
  * crud-generic mapper beans (subclasses of {@link AbsMapperBase}, {@link AbsMapBasic},
- * the deprecated {@link AbstractMapper}, and any {@link RegisterableMapper})
- * register {@code TypeMap} and {@code Converter} entries in the shared
- * {@link org.modelmapper.ModelMapper} from their constructors. Under global
- * lazy-init, these beans are not instantiated until somebody injects them by
+ * {@link AbsFlexMapConfigAbstract}, the deprecated {@link AbstractMapper}, and any
+ * {@link RegisterableMapper}) register {@code TypeMap} and {@code Converter} entries
+ * in the shared {@link org.modelmapper.ModelMapper} from their constructors. Under
+ * global lazy-init, these beans are not instantiated until somebody injects them by
  * type, which means a direct {@code modelMapper.map(entity, ImmutableDto.class)}
  * call from unrelated code (e.g. event listeners or audit trail) finds no
  * registered converter and falls back to reflective instantiation of the
  * destination type. For Lombok {@code @Value} DTOs without a no-arg constructor
  * this surfaces as a {@code NoSuchMethodException}.
+ * </p>
+ * <p>
+ * {@link AbsFlexMapConfigAbstract} subclasses are a special case: the config bean
+ * itself is not a mapper, but its constructor instantiates several inner
+ * {@link AbsMapBasic} mappers as a side-effect, and those are what register the
+ * TypeMaps. The inner mappers are not Spring beans, so the only way to trigger
+ * registration is to keep the config bean eager.
  * </p>
  * <p>
  * This processor walks the {@link BeanDefinitionRegistry} and sets
@@ -75,6 +83,7 @@ public class AbsMapperEagerInitPostProcessor implements BeanDefinitionRegistryPo
         return AbsMapperBase.class.isAssignableFrom(clazz)
             || AbsMapBasic.class.isAssignableFrom(clazz)        // also implements RegisterableMapper; the next branch catches direct implementors that don't extend AbsMapBasic
             || AbstractMapper.class.isAssignableFrom(clazz)
-            || RegisterableMapper.class.isAssignableFrom(clazz);
+            || RegisterableMapper.class.isAssignableFrom(clazz)
+            || AbsFlexMapConfigAbstract.class.isAssignableFrom(clazz);  // side-effect ctor instantiates inner AbsMapBasic mappers; the config itself is not a RegisterableMapper
     }
 }

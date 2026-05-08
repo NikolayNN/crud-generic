@@ -1,5 +1,7 @@
 package by.nhorushko.crudgeneric.flex.config;
 
+import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.mapper.composite.AbsFlexMapConfigAbstract;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
 import by.nhorushko.crudgeneric.mapper.AbstractMapper;
@@ -64,6 +66,19 @@ public class AbsMapperEagerInitPostProcessorTest {
         new AbsMapperEagerInitPostProcessor().postProcessBeanFactory(bf);
 
         assertFalse(bf.getBeanDefinition("legacyMapper").isLazyInit());
+    }
+
+    @Test
+    public void postProcessBeanFactory_flagOn_alsoFlipsAbsFlexMapConfigSubtypes() {
+        DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
+
+        BeanDefinition mapperBd = new RootBeanDefinition(StubFlexMapConfigBean.class);
+        mapperBd.setLazyInit(true);
+        bf.registerBeanDefinition("flexMapConfig", mapperBd);
+
+        new AbsMapperEagerInitPostProcessor().postProcessBeanFactory(bf);
+
+        assertFalse(bf.getBeanDefinition("flexMapConfig").isLazyInit());
     }
 
     @Test
@@ -158,6 +173,24 @@ public class AbsMapperEagerInitPostProcessorTest {
     public static class StubRegisterableBean implements RegisterableMapper {
         @Override
         public void register() { /* no-op */ }
+    }
+
+    // BDRPP only inspects bean definitions via getType(beanName, false) and never
+    // instantiates the bean, so the parent ctor (which would dereference the null
+    // AbsModelMapper while creating the inner AbsMapBasic side-effects) never runs.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static class StubFlexMapConfigBean extends AbsFlexMapConfigAbstract {
+        public StubFlexMapConfigBean() {
+            super(null, Object.class, Object.class, Object.class, Object.class);
+        }
+        @Override
+        protected AbsMapBasic mapperCreateDtoToEntity(AbsModelMapper m, Class a, Class b) { return null; }
+        @Override
+        protected AbsMapBasic mapperUpdateDtoToEntity(AbsModelMapper m, Class a, Class b) { return null; }
+        @Override
+        protected AbsMapBasic mapperReadDtoToEntity(AbsModelMapper m, Class a, Class b) { return null; }
+        @Override
+        protected AbsMapBasic mapperEntityToReadDto(AbsModelMapper m, Class a, Class b) { return null; }
     }
 
     public static class StubUnrelatedBean { }
