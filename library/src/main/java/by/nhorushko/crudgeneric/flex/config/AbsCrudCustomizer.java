@@ -20,6 +20,30 @@ import lombok.Getter;
  *             .build();
  * }
  * </pre>
+ *
+ * <p>Example: opt out of eager mapper-bean initialization under
+ * {@code spring.main.lazy-initialization=true}:</p>
+ * <pre>
+ * &#64;Bean
+ * public AbsCrudCustomizer absCrudCustomizer() {
+ *     return AbsCrudCustomizer.builder()
+ *             .eagerTypeMapRegistration(false)
+ *             .build();
+ * }
+ * </pre>
+ *
+ * <p>The {@code eagerTypeMapRegistration} flag controls whether crud-generic
+ * forces the following bean classes to be eagerly initialized regardless of
+ * the global lazy-init setting:</p>
+ * <ul>
+ *   <li>{@code by.nhorushko.crudgeneric.v2.mapper.AbsMapperBase} and subclasses</li>
+ *   <li>{@code by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic} and subclasses</li>
+ *   <li>{@code by.nhorushko.crudgeneric.mapper.AbstractMapper} (deprecated) and subclasses</li>
+ *   <li>{@code by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper} implementations</li>
+ * </ul>
+ * <p>These beans register {@code TypeMap} / {@code Converter} entries in the shared
+ * {@code ModelMapper} from their constructors, so they must be instantiated before
+ * any consumer calls {@code modelMapper.map(...)}.</p>
  */
 @Getter
 @Builder
@@ -27,4 +51,7 @@ public class AbsCrudCustomizer {
 
     @Builder.Default
     private final boolean typeMapCheckerEnabled = true;
+
+    @Builder.Default
+    private final boolean eagerTypeMapRegistration = true;
 }
