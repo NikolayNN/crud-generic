@@ -124,3 +124,46 @@ public class MyEntityController extends AbsFlexControllerCRUD<Long, MyReadDto, M
 }
 
 ```
+
+## Advanced Configuration
+
+### Disabling the startup TypeMap check
+
+By default, when `@EnableAbsGenericCrud` is active, the framework runs `AbsTypeMapChecker` at application startup. It walks every service that extends `AbsFlexServiceR` and verifies that the required `ModelMapper` `TypeMap` entries (DTO ↔ Entity, plus update/create DTOs) are registered. If any mapping is missing, the application fails fast with `UnsupportedOperationException`.
+
+You can opt out of this check by registering a single `AbsCrudCustomizer` bean:
+
+```java
+import by.nhorushko.crudgeneric.flex.config.AbsCrudCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class CrudConfig {
+
+    @Bean
+    public AbsCrudCustomizer absCrudCustomizer() {
+        return AbsCrudCustomizer.builder()
+                .typeMapCheckerEnabled(false)
+                .build();
+    }
+}
+```
+
+To scope the override to a specific Spring profile (for example, only disable in `dev`):
+
+```java
+@Bean
+@Profile("dev")
+public AbsCrudCustomizer absCrudCustomizer() {
+    return AbsCrudCustomizer.builder()
+            .typeMapCheckerEnabled(false)
+            .build();
+}
+```
+
+Notes:
+
+- The default is `typeMapCheckerEnabled = true`. Removing the bean (or omitting the flag) restores validation.
+- The `AbsTypeMapChecker` `SmartLifecycle` bean is always registered; when validation is disabled, its `start()` becomes a no-op.
+- Register at most one `AbsCrudCustomizer` bean per context — additional beans cause `NoUniqueBeanDefinitionException` at startup.
