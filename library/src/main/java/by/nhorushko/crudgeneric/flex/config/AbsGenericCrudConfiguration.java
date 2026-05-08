@@ -36,15 +36,16 @@ public class AbsGenericCrudConfiguration {
      * The bean is registered under the explicit name {@code absGenericCrudModelMapper} so applications
      * are free to declare their own {@code modelMapper} bean (e.g. with looser matching rules) without
      * triggering {@link org.springframework.beans.factory.support.BeanDefinitionOverrideException}.
-     * If the consumer's bean is annotated {@link org.springframework.context.annotation.Primary}, it will
-     * win for type-based autowiring; otherwise both beans coexist and consumers can disambiguate by name
-     * or qualifier.
+     * Consumer apps that declare their own {@code ModelMapper} bean <strong>must</strong> annotate it
+     * {@link org.springframework.context.annotation.Primary @Primary} so that {@link #absModelMapper}
+     * (which injects {@code ModelMapper} by type) resolves unambiguously; otherwise the dual-bean
+     * context will throw {@code NoUniqueBeanDefinitionException} when {@code absModelMapper} is wired.
      * </p>
      *
      * @return A configured ModelMapper instance.
      */
     @Bean("absGenericCrudModelMapper")
-    public ModelMapper modelMapper() {
+    public ModelMapper absGenericCrudModelMapper() {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration()
                 .setFieldMatchingEnabled(true)

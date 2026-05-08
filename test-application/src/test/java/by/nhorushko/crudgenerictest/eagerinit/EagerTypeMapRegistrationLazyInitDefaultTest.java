@@ -5,6 +5,7 @@ import by.nhorushko.crudgenerictest.domain.entity.MockAEntity;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class EagerTypeMapRegistrationLazyInitDefaultTest {
 
     @Autowired
+    @Qualifier("modelMapper")
     private ModelMapper modelMapper;
 
     @Autowired
