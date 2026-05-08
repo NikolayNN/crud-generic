@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlMergeMode;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Transactional
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
+@Sql(statements = "MERGE INTO user(id, name) KEY(id) VALUES (1, 'admin')")
+@SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 public class DriverServiceTest {
 
     @Autowired
