@@ -32,10 +32,18 @@ public class AbsGenericCrudConfiguration {
      * field access, and enabling skipping of null values during mapping. These settings are optimized for
      * CRUD operations within a Spring Boot application.
      * </p>
+     * <p>
+     * The bean is registered under the explicit name {@code absGenericCrudModelMapper} so applications
+     * are free to declare their own {@code modelMapper} bean (e.g. with looser matching rules) without
+     * triggering {@link org.springframework.beans.factory.support.BeanDefinitionOverrideException}.
+     * If the consumer's bean is annotated {@link org.springframework.context.annotation.Primary}, it will
+     * win for type-based autowiring; otherwise both beans coexist and consumers can disambiguate by name
+     * or qualifier.
+     * </p>
      *
      * @return A configured ModelMapper instance.
      */
-    @Bean
+    @Bean("absGenericCrudModelMapper")
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration()
