@@ -90,4 +90,23 @@ public class AbsGenericCrudConfiguration {
                 () -> AbsCrudCustomizer.builder().build());
         return new AbsTypeMapChecker(services, modelMapper, customizer.isTypeMapCheckerEnabled());
     }
+
+    /**
+     * Registers {@link AbsMapperEagerInitPostProcessor} so that crud-generic
+     * mapper beans are eagerly initialized regardless of
+     * {@code spring.main.lazy-initialization=true}.
+     * <p>
+     * Declared {@code static} because {@link
+     * org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor}
+     * beans must be created before the enclosing {@code @Configuration} class
+     * is fully processed; a non-static factory method would emit a Spring
+     * warning and prevent {@code @Bean} processing of this configuration.
+     * </p>
+     *
+     * @return the registered post-processor.
+     */
+    @Bean
+    public static AbsMapperEagerInitPostProcessor absMapperEagerInitPostProcessor() {
+        return new AbsMapperEagerInitPostProcessor();
+    }
 }
