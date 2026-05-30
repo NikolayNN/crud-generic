@@ -4,7 +4,6 @@ import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceCRUD;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceExtCRUD;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
-import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.SmartLifecycle;
 
@@ -20,20 +19,42 @@ import java.util.Collection;
  * the application, throwing an exception if any required mapping is missing. This proactive
  * check helps in identifying configuration issues early in the development lifecycle.
  * </p>
+ * <p>
+ * The check can be disabled by registering an {@link AbsCrudCustomizer} bean with
+ * {@code typeMapCheckerEnabled = false}. When disabled, this lifecycle bean still starts
+ * but performs no validation.
+ * </p>
  */
-@RequiredArgsConstructor
 public class AbsTypeMapChecker implements SmartLifecycle {
 
     public static final int PHASE_NUMBER = Integer.MAX_VALUE;
 
     private final Collection<? extends AbsFlexServiceR<?, ?, ?, ?>> services;
     private final ModelMapper modelMapper;
+    private final boolean enabled;
 
     private boolean isRunning = false;
 
+    public AbsTypeMapChecker(Collection<? extends AbsFlexServiceR<?, ?, ?, ?>> services,
+                             ModelMapper modelMapper) {
+        this(services, modelMapper, true);
+    }
+
+    public AbsTypeMapChecker(Collection<? extends AbsFlexServiceR<?, ?, ?, ?>> services,
+                             ModelMapper modelMapper,
+                             boolean enabled) {
+        this.services = services;
+        this.modelMapper = modelMapper;
+        this.enabled = enabled;
+    }
+
     @Override
     public void start() {
-        checkMappers();
+        if (enabled) {
+            checkMappers();
+        }
+        // isRunning must be set after checkMappers(): on validation failure the
+        // exception aborts context startup and the bean stays not-running.
         isRunning = true;
     }
 

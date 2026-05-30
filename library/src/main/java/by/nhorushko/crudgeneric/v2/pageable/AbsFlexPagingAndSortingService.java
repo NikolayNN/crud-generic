@@ -1,10 +1,8 @@
 package by.nhorushko.crudgeneric.v2.pageable;
 
 import by.nhorushko.crudgeneric.util.PageableUtils;
-import by.nhorushko.crudgeneric.util.SpecificationUtils;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import by.nhorushko.crudgeneric.v2.mapper.AbsMapperDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,26 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * use
- * @see AbsFlexPagingAndSortingService
- */
-@Deprecated()
-public abstract class AbsPagingAndSortingService<
+public abstract class AbsFlexPagingAndSortingService<
         ID,
         DTO extends AbstractDto<ID>,
         ENTITY extends AbstractEntity<ID>,
         SPECS extends AbsFilterSpecification<ENTITY>> {
 
     protected final JpaSpecificationExecutor<ENTITY> repository;
-    protected final AbsMapperDto<ENTITY, DTO> mapper;
     protected final SPECS filterSpecs;
 
-    public AbsPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository,
-                                      AbsMapperDto<ENTITY, DTO> mapper,
-                                      SPECS filterSpecs) {
+    public AbsFlexPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository, SPECS filterSpecs) {
         this.repository = repository;
-        this.mapper = mapper;
         this.filterSpecs = filterSpecs;
     }
 
@@ -72,25 +61,21 @@ public abstract class AbsPagingAndSortingService<
         return resultSpec;
     }
 
+    public Page<DTO> page(PageFilterRequest request) {
+        Specification<ENTITY> entitySpecification = null;
+        if (!request.getFilterGroup().isEmpty()) {
+            entitySpecification = buildSpecs(request);
+        }
+
+        Pageable pageable = PageableUtils.buildPageRequest(request.getPage(), request.getPageSize(), filterSpecs.handleSort(request));
+
+        return repository.findAll(entitySpecification, pageable)
+                .map(this::toDto);
+    }
+
+    protected abstract DTO toDto(ENTITY entity);
+
     protected abstract Optional<Specification<ENTITY>> buildSpecification(PageFilterRequest.Filter filter);
 
-    private Specification<ENTITY> concat(Specification<ENTITY>[] specifications, PageFilterRequest.ConcatCondition condition) {
-        if (condition == PageFilterRequest.ConcatCondition.AND) {
-            return SpecificationUtils.buildAndSpecs(specifications);
-        } else {
-            return SpecificationUtils.buildOrSpecs(specifications);
-        }
-    }
-
-    public Page<DTO> page(PageFilterRequest request) {
-        Pageable pageable = PageableUtils.buildPageRequest(request.getPage(), request.getPageSize(), filterSpecs.handleSort(request));
-        if (request.getFilterGroup().isEmpty()) {
-            return repository.findAll(null, pageable)
-                    .map(mapper::toDto);
-        } else {
-            return repository.findAll(buildSpecs(request), pageable)
-                    .map(mapper::toDto);
-        }
-    }
 }
 

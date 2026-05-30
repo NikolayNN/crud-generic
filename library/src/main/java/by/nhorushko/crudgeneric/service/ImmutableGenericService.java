@@ -58,7 +58,7 @@ public abstract class ImmutableGenericService<
     }
 
     protected AppNotFoundException notFoundException(Long id) {
-        return new AppNotFoundException(String.format("Entity %s id: %s was not found", entityClass, id));
+        return new AppNotFoundException(String.format("Entity id: %s was not found", id));
     }
 
     @Override

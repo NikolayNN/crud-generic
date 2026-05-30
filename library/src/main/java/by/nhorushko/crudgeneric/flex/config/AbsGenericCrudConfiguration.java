@@ -2,12 +2,14 @@ package by.nhorushko.crudgeneric.flex.config;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
-import jakarta.persistence.EntityManager;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import jakarta.persistence.EntityManager;
 import java.util.List;
 
 /**
@@ -30,11 +32,20 @@ public class AbsGenericCrudConfiguration {
      * field access, and enabling skipping of null values during mapping. These settings are optimized for
      * CRUD operations within a Spring Boot application.
      * </p>
+     * <p>
+     * The bean is registered under the explicit name {@code absGenericCrudModelMapper} so applications
+     * are free to declare their own {@code modelMapper} bean (e.g. with looser matching rules) without
+     * triggering {@link org.springframework.beans.factory.support.BeanDefinitionOverrideException}.
+     * Consumer apps that declare their own {@code ModelMapper} bean <strong>must</strong> annotate it
+     * {@link org.springframework.context.annotation.Primary @Primary} so that {@link #absModelMapper}
+     * (which injects {@code ModelMapper} by type) resolves unambiguously; otherwise the dual-bean
+     * context will throw {@code NoUniqueBeanDefinitionException} when {@code absModelMapper} is wired.
+     * </p>
      *
      * @return A configured ModelMapper instance.
      */
-    @Bean
-    public ModelMapper modelMapper() {
+    @Bean("absGenericCrudModelMapper")
+    public ModelMapper absGenericCrudModelMapper() {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration()
                 .setFieldMatchingEnabled(true)
@@ -65,27 +76,46 @@ public class AbsGenericCrudConfiguration {
     /**
      * Creates and configures an {@link AbsTypeMapChecker} bean to verify the correctness of ModelMapper type mappings.
      * <p>
-     * This bean initializer method constructs an instance of {@link AbsTypeMapChecker}, which is responsible for
-     * checking that all necessary type mappings between DTOs and entities are correctly configured in ModelMapper.
-     * This verification process is crucial for ensuring that the application's data mapping configurations are set up
-     * properly before the application fully starts, preventing runtime errors related to missing or incorrect mappings.
+     * Behavior is controlled by an optional {@link AbsCrudCustomizer} bean: if the application registers one,
+     * the {@code typeMapCheckerEnabled} flag from that customizer determines whether validation runs. If no
+     * customizer bean is registered, the default ({@code typeMapCheckerEnabled = true}) is used.
      * </p>
      * <p>
-     * The {@link AbsTypeMapChecker} operates at the end of the application's startup phase, thanks to its implementation
-     * of {@link SmartLifecycle}, which allows it to have control over its startup sequence within the Spring ApplicationContext.
-     * If any mappings are missing, the application will fail to start, providing an early warning to developers about
-     * configuration issues.
+     * The {@link AbsTypeMapChecker} bean is always registered to preserve {@link SmartLifecycle} ordering.
+     * When the customizer disables validation, the bean's {@code start()} method becomes a no-op.
      * </p>
      *
-     * @param services    A list of services extending {@link AbsFlexServiceR}. These services are checked by the
-     *                    {@link AbsTypeMapChecker} to ensure that each has the necessary type mappings configured
-     *                    for their DTO and entity classes.
-     * @param modelMapper The {@link ModelMapper} instance used throughout the application for DTO to entity mappings.
-     *                    This is the same ModelMapper instance that will be checked by the {@link AbsTypeMapChecker}.
-     * @return An initialized {@link AbsTypeMapChecker} bean ready to verify the application's ModelMapper configurations.
+     * @param services            services subject to mapping validation.
+     * @param modelMapper         the application's {@link ModelMapper} instance.
+     * @param customizerProvider  optional provider for {@link AbsCrudCustomizer}.
+     * @return the registered {@link AbsTypeMapChecker} bean.
      */
     @Bean
-    public AbsTypeMapChecker crudAbstractGenericMappingChecker(List<? extends AbsFlexServiceR<?, ?, ?, ?>> services, ModelMapper modelMapper) {
-        return new AbsTypeMapChecker(services, modelMapper);
+    public AbsTypeMapChecker crudAbstractGenericMappingChecker(
+            List<? extends AbsFlexServiceR<?, ?, ?, ?>> services,
+            ModelMapper modelMapper,
+            ObjectProvider<AbsCrudCustomizer> customizerProvider) {
+        AbsCrudCustomizer customizer = customizerProvider.getIfAvailable(
+                () -> AbsCrudCustomizer.builder().build());
+        return new AbsTypeMapChecker(services, modelMapper, customizer.isTypeMapCheckerEnabled());
+    }
+
+    /**
+     * Registers {@link AbsMapperEagerInitPostProcessor} so that crud-generic
+     * mapper beans are eagerly initialized regardless of
+     * {@code spring.main.lazy-initialization=true}.
+     * <p>
+     * Declared {@code static} because {@link
+     * org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor}
+     * beans must be created before the enclosing {@code @Configuration} class
+     * is fully processed; a non-static factory method would emit a Spring
+     * warning and prevent {@code @Bean} processing of this configuration.
+     * </p>
+     *
+     * @return the registered post-processor.
+     */
+    @Bean
+    public static AbsMapperEagerInitPostProcessor absMapperEagerInitPostProcessor() {
+        return new AbsMapperEagerInitPostProcessor();
     }
 }

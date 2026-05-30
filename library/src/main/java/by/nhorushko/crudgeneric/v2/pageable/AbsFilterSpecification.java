@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.chrono.ChronoLocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 public abstract class AbsFilterSpecification<ENTITY> {
@@ -108,11 +109,15 @@ public abstract class AbsFilterSpecification<ENTITY> {
     }
 
     private String getPathByName(String propertyName) {
-        return this.entityContext.get(propertyName).path;
+        Context context = this.entityContext.get(propertyName);
+        if (context == null) {
+            throw new NoSuchElementException(String.format("Context do not found by property name: %s", propertyName));
+        }
+        return context.path;
     }
 
-    protected  <T extends Comparable<T>> Specification<ENTITY> buildSpecification(PageFilterRequest.Filter filter,
-                                                                               FilterSpecifications<ENTITY, T> specification) {
+    protected <T extends Comparable<T>> Specification<ENTITY> buildSpecification(PageFilterRequest.Filter filter,
+                                                                                 FilterSpecifications<ENTITY, T> specification) {
         String fieldName = this.getPathByName(filter.getName());
         Function<String, T> converterFunction = converters.getFunction(entityContext.get(filter.getName()).clazz);
         return StringUtils.isNotBlank(filter.getFilter()) ?

@@ -8,7 +8,7 @@
 //import org.junit.Test;
 //import org.modelmapper.ModelMapper;
 //
-//import javax.annotation.PostConstruct;
+//import jakarta.annotation.PostConstruct;
 //
 //public class DtoMapperTest2 {
 //

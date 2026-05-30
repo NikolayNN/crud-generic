@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -29,11 +30,11 @@ import static java.lang.String.format;
  * ensures flexible and type-safe handling of entities across various operations.
  * </p>
  *
- * @param <ENTITY_ID>   the type of the entity's identifier
- * @param <ENTITY>      the entity type that extends {@link AbstractEntity}
- * @param <READ_DTO>    the DTO type used for read operations, extending {@link AbstractDto}
- * @param <UPDATE_DTO>  the DTO type used for update operations, extending {@link AbsUpdateDto}
- * @param <REPOSITORY>  the repository type for the entity, extending {@link JpaRepository}
+ * @param <ENTITY_ID>  the type of the entity's identifier
+ * @param <ENTITY>     the entity type that extends {@link AbstractEntity}
+ * @param <READ_DTO>   the DTO type used for read operations, extending {@link AbstractDto}
+ * @param <UPDATE_DTO> the DTO type used for update operations, extending {@link AbsUpdateDto}
+ * @param <REPOSITORY> the repository type for the entity, extending {@link JpaRepository}
  */
 public abstract class AbsFlexServiceRUD<
         ENTITY_ID,
@@ -74,7 +75,7 @@ public abstract class AbsFlexServiceRUD<
      * applies the changes from the partial update object, and then persists the updated entity.
      * </p>
      *
-     * @param id the ID of the entity to update
+     * @param id      the ID of the entity to update
      * @param partial the object containing the partial updates
      * @return the updated entity represented as a READ_DTO
      */
@@ -85,23 +86,34 @@ public abstract class AbsFlexServiceRUD<
 
     private READ_DTO runUpdate(AbstractDto<ENTITY_ID> dto) {
         checkId(dto);
+        beforeUpdateHook(dto);
+        Optional<READ_DTO> previous = tryBeforeUpdateHook(dto);
         ENTITY newValue = mapEntity(dto);
-        beforeUpdateHook(newValue);
         ENTITY actual = repository.save(newValue);
         READ_DTO actualDto = mapReadDto(actual);
         afterUpdateHook(actualDto);
+        previous.ifPresent(b -> ((AbsUpdateChangesHookable<ENTITY_ID, READ_DTO>) this).afterUpdateHook(b, actualDto));
         return actualDto;
     }
 
+    protected Optional<READ_DTO> tryBeforeUpdateHook(AbstractDto<ENTITY_ID> current) {
+        if (this instanceof AbsUpdateChangesHookable) {
+            READ_DTO previous = getById(current.getId());
+            ((AbsUpdateChangesHookable<ENTITY_ID, READ_DTO>) this).beforeUpdateHook(previous, current);
+            return Optional.of(previous);
+        }
+        return Optional.empty();
+    }
+
     /**
-     * Hook method called before an entity is updated.
+     * Hook method called before an DTO is updated.
      * <p>
      * Override this method in subclasses to implement custom logic to be executed before updating an entity.
      * </p>
      *
-     * @param newValue the entity about to be updated
+     * @param dto the entity about to be updated
      */
-    protected void beforeUpdateHook(ENTITY newValue) {
+    protected void beforeUpdateHook(AbstractDto<ENTITY_ID> dto) {
     }
 
     /**

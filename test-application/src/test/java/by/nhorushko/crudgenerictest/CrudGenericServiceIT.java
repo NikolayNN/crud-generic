@@ -92,7 +92,7 @@ public class CrudGenericServiceIT {
             mockService.getById(9999L);
         });
 
-        assertEquals("9999 was not found", exception.getMessage());
+        assertEquals("Entity id: 9999 was not found", exception.getMessage());
     }
 
     @Test
@@ -180,7 +180,7 @@ public class CrudGenericServiceIT {
         Exception exception = assertThrows(AppNotFoundException.class, () -> {
             mockService.deleteById(9999L);
         });
-        assertEquals("9999 was not found", exception.getMessage());
+        assertEquals("Entity id: 9999 was not found", exception.getMessage());
     }
 
     @Test

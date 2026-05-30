@@ -5,7 +5,6 @@ import by.nhorushko.crudgeneric.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgeneric.mapper.AbstractMapper;
 import by.nhorushko.crudgeneric.util.FieldCopyUtil;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -32,13 +31,11 @@ public abstract class RudGenericService<
     }
 
     public void deleteById(Long id) {
-        try {
-            processBeforeDelete(repository.getOne(id));
-            repository.deleteById(id);
-            processAfterDelete(id);
-        } catch (EmptyResultDataAccessException ex) {
-            throw new AppNotFoundException(String.format("Entity %s with id: %s was not found", entityClass.getSimpleName(), id), ex);
-        }
+        ENTITY entity = repository.findById(id)
+                .orElseThrow(() -> new AppNotFoundException(String.format("Entity id: %s was not found", id)));
+        processBeforeDelete(entity);
+        repository.deleteById(id);
+        processAfterDelete(id);
     }
 
     public void processBeforeDelete(ENTITY entity) {
