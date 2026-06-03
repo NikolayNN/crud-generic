@@ -38,10 +38,16 @@ public abstract class RudGenericService<
     /**
      * Insert-if-absent / merge-if-present. Restores the behaviour Hibernate 6.5 merge gave
      * implicitly for detached entities whose row does not exist (broken on Hibernate 6.6).
-     * Sentinel id 0 is already nulled by the mapper, so a null id always routes to persist.
+     * The sentinel id 0 is normalised to {@code null} here — the single chokepoint every save
+     * path funnels through — so application mappers that override {@code toEntity(...)} and
+     * bypass the base converter's normalisation still route a new entity to persist.
      */
     protected ENTITY persistOrMerge(ENTITY entity) {
         Long id = entity.getId();
+        if (id != null && id == 0L) {
+            entity.setId(null);
+            id = null;
+        }
         if (id == null || !repository.existsById(id)) {
             entityManager.persist(entity);
             return entity;

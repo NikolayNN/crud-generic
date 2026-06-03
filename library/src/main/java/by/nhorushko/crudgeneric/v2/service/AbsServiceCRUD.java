@@ -28,9 +28,12 @@ public abstract class AbsServiceCRUD<
 
     /**
      * Insert-if-absent / merge-if-present. Restores Hibernate 6.5 merge-of-absent-row semantics
-     * (broken on 6.6). Sentinel id 0 is already nulled by the mapper, so a null id routes to persist.
+     * (broken on 6.6). The sentinel id 0 is normalised to {@code null} here — the single chokepoint
+     * every save path funnels through — so application mappers that override {@code toEntity(...)}
+     * and bypass the base converter's normalisation still route a new entity to persist.
      */
     protected ENTITY persistOrMerge(ENTITY entity) {
+        entity.nullifyZeroId();
         ENTITY_ID id = entity.getId();
         if (id == null || !repository.existsById(id)) {
             entityManager.persist(entity);
