@@ -28,7 +28,9 @@ public abstract class AbsServiceExtCRUD<
 
     public DTO save(EXT_ID relationId, DTO dto) {
         if (dto.isNew()) {
-            ENTITY entity = repository.save(mapper.toEntity(relationId, dto));
+            ENTITY entity = mapper.toEntity(relationId, dto);
+            entity.nullifyZeroId();
+            entity = repository.save(entity);
             DTO saved = mapper.toDto(entity);
             afterSaveHook(relationId, saved);
             return saved;
@@ -40,8 +42,9 @@ public abstract class AbsServiceExtCRUD<
         List<ENTITY> entities = mapper.toEntities(relationId, dtos);
         entities.forEach(e -> {
             if (!e.isNew()) throw new IllegalArgumentException(wrongIdMessage(e.getId()));
+            e.nullifyZeroId();
         });
-        entities = repository.saveAll(mapper.toEntities(relationId, dtos));
+        entities = repository.saveAll(entities);
         List<DTO> saved = mapper.toDtos(entities);
         saved.forEach(s -> afterSaveHook(relationId, s));
         return saved;

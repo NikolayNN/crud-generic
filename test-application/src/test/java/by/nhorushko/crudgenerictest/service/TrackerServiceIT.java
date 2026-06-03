@@ -4,6 +4,8 @@ import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.Tracker;
 import by.nhorushko.crudgenerictest.domain.entity.TrackerEntity;
 import jakarta.persistence.EntityManager;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,6 +152,33 @@ public class TrackerServiceIT {
         TrackerEntity savedTrackedFromDB = findTrackerFromDB(savedTracker.getId());
         assertEquals(givenTracker.getImei(), savedTrackedFromDB.getImei());
         assertEquals(givenTracker.getPhoneNumber(), savedTrackedFromDB.getPhoneNumber());
+    }
+
+    @Test
+    public void trackerShouldBeSavedWhenIdIsZero() {
+        Tracker givenTracker = new Tracker(0L, "355234055650192", "+3197011460885");
+
+        Tracker savedTracker = this.service.save(givenTracker);
+        assertNotNull(savedTracker.getId());
+        assertNotEquals(0L, savedTracker.getId());
+
+        TrackerEntity savedTrackedFromDB = findTrackerFromDB(savedTracker.getId());
+        assertEquals(givenTracker.getImei(), savedTrackedFromDB.getImei());
+        assertEquals(givenTracker.getPhoneNumber(), savedTrackedFromDB.getPhoneNumber());
+    }
+
+    @Test
+    public void savingTrackerWithZeroIdShouldInsertWithoutMergeSelect() {
+        Statistics stats = entityManager.getEntityManagerFactory()
+                .unwrap(SessionFactory.class).getStatistics();
+        stats.setStatisticsEnabled(true);
+        stats.clear();
+
+        this.service.save(new Tracker(0L, "355234055650192", "+3197011460885"));
+        entityManager.flush();
+
+        assertEquals(1, stats.getPrepareStatementCount(),
+                "new entity with id=0 must be persisted (single INSERT), not merged (pre-insert SELECT + INSERT)");
     }
 
     @Test

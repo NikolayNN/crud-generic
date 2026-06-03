@@ -22,14 +22,18 @@ public abstract class AbsServiceCRUD<
     }
 
     public DTO save(DTO dto) {
-        ENTITY entity = repository.save(mapper.toEntity(dto));
+        ENTITY entity = mapper.toEntity(dto);
+        entity.nullifyZeroId();
+        entity = repository.save(entity);
         DTO saved = mapper.toDto(entity);
         afterSaveHook(saved);
         return saved;
     }
 
     public List<DTO> saveAll(Collection<DTO> dto) {
-        List<ENTITY> entities = repository.saveAll(mapper.toEntities(dto));
+        List<ENTITY> entities = mapper.toEntities(dto);
+        entities.forEach(AbstractEntity::nullifyZeroId);
+        entities = repository.saveAll(entities);
         List<DTO> saved = mapper.toDtos(entities);
         saved.forEach(this::afterSaveHook);
         return saved;
