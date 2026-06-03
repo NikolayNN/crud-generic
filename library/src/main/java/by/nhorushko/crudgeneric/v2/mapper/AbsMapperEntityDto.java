@@ -52,6 +52,7 @@ public abstract class AbsMapperEntityDto<ENTITY extends AbstractEntity<?>, DTO e
                 ENTITY beforeEntity = entityManager.getReference(entityClass, ((AbstractDto<?>)source).getId());
                 mapSpecificFields(source, beforeEntity, destination);
             }
+            destination.nullifyZeroId();
             return destination;
         };
     }

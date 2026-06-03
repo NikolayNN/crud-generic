@@ -87,6 +87,9 @@ public abstract class AbstractMapper<ENTITY extends AbstractEntity, DTO extends 
             DTO source = context.getSource();
             ENTITY destination = context.getDestination();
             mapSpecificFields(source, destination);
+            if (destination.getId() != null && destination.getId() == 0L) {
+                destination.setId(null);
+            }
             return context.getDestination();
         };
     }

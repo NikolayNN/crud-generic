@@ -78,6 +78,9 @@ public abstract class AbsFlexServiceExtCRUD<
     public READ_DTO save(EXT_ID relationId, CREATE_DTO dto) {
         beforeSaveHook(relationId, dto);
         ENTITY entity = extMapper.map(relationId, dto);
+        // Create-only path: CREATE_DTO (AbsCreateDto) carries no id and the mapper nulls a sentinel 0,
+        // so the entity has a null id and Spring Data routes save() to persist (no Hibernate 6.6
+        // merge-of-absent-row). persistOrMerge is therefore not needed here.
         entity = repository.save(entity);
         READ_DTO actual = mapReadDto(entity);
         afterSaveHook(relationId, actual);

@@ -5,11 +5,14 @@ import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.Getter;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Abstract service class providing create, read, update, and delete (CRUD) operations for entities.
@@ -46,6 +49,22 @@ public abstract class AbsFlexServiceCRUD<
     @Getter
     protected final Class<CREATE_DTO> createDtoClass;
 
+    @PersistenceContext
+    protected EntityManager entityManager;
+
+    /**
+     * Insert-if-absent / merge-if-present. Restores Hibernate 6.5 merge-of-absent-row semantics
+     * (broken on 6.6). Sentinel id 0 is already nulled by the mapper (AbsMapperEntityDto).
+     */
+    protected ENTITY persistOrMerge(ENTITY entity) {
+        ENTITY_ID id = entity.getId();
+        if (id == null || !repository.existsById(id)) {
+            entityManager.persist(entity);
+            return entity;
+        }
+        return repository.save(entity);
+    }
+
     public AbsFlexServiceCRUD(AbsModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<CREATE_DTO> createDtoClass) {
         super(mapper, repository, entityClass, readDtoClass, updateDtoClass);
         this.createDtoClass = createDtoClass;
@@ -64,7 +83,7 @@ public abstract class AbsFlexServiceCRUD<
      */
     public READ_DTO save(CREATE_DTO dto) {
         beforeSaveHook(dto);
-        ENTITY entity = repository.save(mapEntity(dto));
+        ENTITY entity = persistOrMerge(mapEntity(dto));
         READ_DTO actual = mapReadDto(entity);
         afterSaveHook(actual);
         return actual;
@@ -107,7 +126,9 @@ public abstract class AbsFlexServiceCRUD<
      */
     public List<READ_DTO> saveAll(Collection<CREATE_DTO> dtos) {
         beforeSaveAllHook(dtos);
-        List<ENTITY> entities = repository.saveAll(mapAllEntities(dtos));
+        List<ENTITY> entities = mapAllEntities(dtos).stream()
+                .map(this::persistOrMerge)
+                .collect(Collectors.toList());
         List<READ_DTO> actual = mapAllReadDto(entities);
         afterSaveAllHook(actual);
         return actual;

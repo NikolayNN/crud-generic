@@ -4,11 +4,10 @@ import by.nhorushko.crudgeneric.domain.dto.Message;
 import by.nhorushko.crudgeneric.domain.dto.Message.GpsCoordinate;
 import by.nhorushko.crudgeneric.domain.entity.MessageEntity;
 import by.nhorushko.crudgeneric.v2.mapper.AbsMapperEntityDto;
+import jakarta.persistence.EntityManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,7 +17,11 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.anyCollectionOf;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public final class AbsServiceCRUDTest {
@@ -29,17 +32,8 @@ public final class AbsServiceCRUDTest {
     @Mock
     private JpaRepository<MessageEntity, Long> mockedRepository;
 
-    @Captor
-    private ArgumentCaptor<Message> messageArgumentCaptor;
-
-    @Captor
-    private ArgumentCaptor<MessageEntity> messageEntityArgumentCaptor;
-
-    @Captor
-    private ArgumentCaptor<List<Message>> messagesArgumentCaptor;
-
-    @Captor
-    private ArgumentCaptor<List<MessageEntity>> messageEntitiesArgumentCaptor;
+    @Mock
+    private EntityManager mockedEntityManager;
 
     private AbsServiceCRUD<Long, MessageEntity, Message, JpaRepository<MessageEntity, Long>> service;
 
@@ -47,76 +41,71 @@ public final class AbsServiceCRUDTest {
     public void initializeService() {
         this.service = new AbsServiceCRUD<>(this.mockedMapper, this.mockedRepository) {
         };
+        this.service.entityManager = this.mockedEntityManager;
     }
 
     @Test
-    public void messageShouldBeSaved() {
-        final Message givenMessageDtoToBeSaved = new Message(null, new GpsCoordinate(5.5F, 6.6F),
-                10, 15, 20);
+    public void newMessageShouldBePersisted() {
+        final Message givenDto = new Message(null, new GpsCoordinate(5.5F, 6.6F), 10, 15, 20);
+        final MessageEntity givenEntity = new MessageEntity(null, 5.5F, 6.6F, 10, 15, 20);
+        when(this.mockedMapper.toEntity(any(Message.class))).thenReturn(givenEntity);
 
-        final MessageEntity givenMessageEntityToBeSaved = new MessageEntity(null, 5.5F, 6.6F,
-                10, 15, 20);
-        when(this.mockedMapper.toEntity(any(Message.class))).thenReturn(givenMessageEntityToBeSaved);
+        final Message savedDto = new Message(255L, new GpsCoordinate(5.5F, 6.6F), 10, 15, 20);
+        when(this.mockedMapper.toDto(givenEntity)).thenReturn(savedDto);
 
-        final MessageEntity givenSavedMessageEntity = new MessageEntity(255L, 5.5F, 6.6F, 10,
-                15, 20);
-        when(this.mockedRepository.save(any(MessageEntity.class))).thenReturn(givenSavedMessageEntity);
+        final Message actual = this.service.save(givenDto);
 
-        final Message givenSavedMessageDto = new Message(255L, new GpsCoordinate(5.5F, 6.6F),
-                10, 15, 20);
-        when(this.mockedMapper.toDto(any(MessageEntity.class))).thenReturn(givenSavedMessageDto);
-
-        final Message actual = this.service.save(givenMessageDtoToBeSaved);
-        assertSame(givenSavedMessageDto, actual);
-
-        verify(this.mockedMapper, times(1)).toEntity(this.messageArgumentCaptor.capture());
-        verify(this.mockedRepository, times(1)).save(this.messageEntityArgumentCaptor.capture());
-        verify(this.mockedMapper, times(1)).toDto(this.messageEntityArgumentCaptor.capture());
-
-        assertSame(givenMessageDtoToBeSaved, this.messageArgumentCaptor.getValue());
-
-        final List<MessageEntity> expectedCapturedMessageEntityArguments = List.of(givenMessageEntityToBeSaved,
-                givenSavedMessageEntity);
-        assertEquals(expectedCapturedMessageEntityArguments, this.messageEntityArgumentCaptor.getAllValues());
+        assertSame(savedDto, actual);
+        assertEquals(Long.valueOf(255L), actual.getId());
+        verify(this.mockedEntityManager, times(1)).persist(givenEntity);
+        verify(this.mockedRepository, never()).save(any(MessageEntity.class));
     }
 
     @Test
-    public void messagesShouldBeSaved() {
-        final List<Message> givenMessagesToBeSaved = List.of(
+    public void existingMessageShouldBeMerged() {
+        final Message givenDto = new Message(5L, new GpsCoordinate(7.7F, 8.8F), 11, 16, 21);
+        final MessageEntity givenEntity = new MessageEntity(5L, 7.7F, 8.8F, 11, 16, 21);
+        when(this.mockedMapper.toEntity(any(Message.class))).thenReturn(givenEntity);
+        when(this.mockedRepository.existsById(5L)).thenReturn(true);
+
+        final MessageEntity mergedEntity = new MessageEntity(5L, 7.7F, 8.8F, 11, 16, 21);
+        when(this.mockedRepository.save(givenEntity)).thenReturn(mergedEntity);
+
+        final Message savedDto = new Message(5L, new GpsCoordinate(7.7F, 8.8F), 11, 16, 21);
+        when(this.mockedMapper.toDto(mergedEntity)).thenReturn(savedDto);
+
+        final Message actual = this.service.save(givenDto);
+
+        assertSame(savedDto, actual);
+        verify(this.mockedRepository, times(1)).save(givenEntity);
+        verify(this.mockedEntityManager, never()).persist(any());
+    }
+
+    @Test
+    public void saveAllShouldRouteEachElement() {
+        final List<Message> givenDtos = List.of(
                 new Message(null, new GpsCoordinate(5.5F, 6.6F), 10, 15, 20),
                 new Message(5L, new GpsCoordinate(7.7F, 8.8F), 11, 16, 21)
         );
+        final MessageEntity newEntity = new MessageEntity(null, 5.5F, 6.6F, 10, 15, 20);
+        final MessageEntity existingEntity = new MessageEntity(5L, 7.7F, 8.8F, 11, 16, 21);
+        when(this.mockedMapper.toEntities(anyCollectionOf(Message.class)))
+                .thenReturn(List.of(newEntity, existingEntity));
+        when(this.mockedRepository.existsById(5L)).thenReturn(true);
+        when(this.mockedRepository.save(existingEntity)).thenReturn(existingEntity);
 
-        final List<MessageEntity> givenMessageEntitiesToBeSaved = List.of(
-                new MessageEntity(null, 5.5F, 6.6F, 10, 15, 20),
-                new MessageEntity(5L, 7.7F, 8.8F, 11, 16, 21)
-        );
-        when(this.mockedMapper.toEntities(anyCollectionOf(Message.class))).thenReturn(givenMessageEntitiesToBeSaved);
-
-        final List<MessageEntity> givenSavedMessageEntities = List.of(
-                new MessageEntity(255L, 5.5F, 6.6F, 10, 15, 20),
-                new MessageEntity(5L, 7.7F, 8.8F, 11, 16, 21)
-        );
-        when(this.mockedRepository.saveAll(anyCollectionOf(MessageEntity.class))).thenReturn(givenSavedMessageEntities);
-
-        final List<Message> givenSavedMessages = List.of(
+        final List<Message> savedDtos = List.of(
                 new Message(255L, new GpsCoordinate(5.5F, 6.6F), 10, 15, 20),
                 new Message(5L, new GpsCoordinate(7.7F, 8.8F), 11, 16, 21)
         );
-        when(this.mockedMapper.toDtos(anyCollectionOf(MessageEntity.class))).thenReturn(givenSavedMessages);
+        when(this.mockedMapper.toDtos(anyCollectionOf(MessageEntity.class))).thenReturn(savedDtos);
 
-        final List<Message> actual = this.service.saveAll(givenMessagesToBeSaved);
-        assertSame(givenSavedMessages, actual);
+        final List<Message> actual = this.service.saveAll(givenDtos);
 
-        verify(this.mockedMapper, times(1)).toEntities(this.messagesArgumentCaptor.capture());
-        verify(this.mockedRepository, times(1))
-                .saveAll(this.messageEntitiesArgumentCaptor.capture());
-        verify(this.mockedMapper, times(1)).toDtos(this.messageEntitiesArgumentCaptor.capture());
-
-        assertSame(givenMessagesToBeSaved, this.messagesArgumentCaptor.getValue());
-
-        final List<List<MessageEntity>> expectedMessageEntityListCapturedArguments = List.of(
-                givenMessageEntitiesToBeSaved, givenSavedMessageEntities);
-        assertEquals(expectedMessageEntityListCapturedArguments, this.messageEntitiesArgumentCaptor.getAllValues());
+        assertEquals(savedDtos, actual);
+        verify(this.mockedEntityManager, times(1)).persist(newEntity);
+        verify(this.mockedRepository, times(1)).save(existingEntity);
+        verify(this.mockedEntityManager, never()).persist(existingEntity);
+        verify(this.mockedRepository, never()).save(newEntity);
     }
 }

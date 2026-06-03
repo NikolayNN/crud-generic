@@ -5,6 +5,8 @@ import by.nhorushko.crudgeneric.domain.AbstractEntity;
 import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgeneric.mapper.AbstractMapper;
 import by.nhorushko.crudgeneric.util.FieldCopyUtil;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -20,6 +22,9 @@ public abstract class RudGenericService<
 
     protected Set<String> ignorePartialUpdateProperties = Set.of("id");
 
+    @PersistenceContext
+    protected EntityManager entityManager;
+
     public RudGenericService(REPOSITORY repository, MAPPER mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
         super(repository, mapper, dtoClass, entityClass);
     }
@@ -28,6 +33,20 @@ public abstract class RudGenericService<
                              Set<String> ignorePartialUpdateProperties) {
         super(repository, mapper, dtoClass, entityClass);
         this.ignorePartialUpdateProperties = ignorePartialUpdateProperties;
+    }
+
+    /**
+     * Insert-if-absent / merge-if-present. Restores the behaviour Hibernate 6.5 merge gave
+     * implicitly for detached entities whose row does not exist (broken on Hibernate 6.6).
+     * Sentinel id 0 is already nulled by the mapper, so a null id always routes to persist.
+     */
+    protected ENTITY persistOrMerge(ENTITY entity) {
+        Long id = entity.getId();
+        if (id == null || !repository.existsById(id)) {
+            entityManager.persist(entity);
+            return entity;
+        }
+        return repository.save(entity);
     }
 
     public void deleteById(Long id) {

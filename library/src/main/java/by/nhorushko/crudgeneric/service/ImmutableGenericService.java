@@ -117,7 +117,6 @@ public abstract class ImmutableGenericService<
 
     protected void checkIdForSave(ENTITY e) {
         checkIdForSave(e.getId());
-        e.setId(null);
     }
 
     protected void checkIdForSave(Long id) {

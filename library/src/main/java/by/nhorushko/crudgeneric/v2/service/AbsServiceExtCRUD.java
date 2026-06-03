@@ -9,7 +9,13 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Read Update Delete Create Service
+ * Read Update Delete Create Service.
+ * <p>
+ * Create-only for new entities: {@code save}/{@code saveAll} reject a non-new id (real assigned id, or
+ * any id != 0) with {@link IllegalArgumentException}, and the mapper normalizes a sentinel {@code 0 -> null}.
+ * Every entity that reaches {@code repository.save} therefore has a {@code null} id and is routed to
+ * {@code persist} by Spring Data — there is no merge-of-absent-row path here, so {@code persistOrMerge}
+ * (used by {@link AbsServiceCRUD}, which supports updates and real assigned ids) is intentionally not needed.
  */
 public abstract class AbsServiceExtCRUD<
         ENTITY_ID,
@@ -29,7 +35,6 @@ public abstract class AbsServiceExtCRUD<
     public DTO save(EXT_ID relationId, DTO dto) {
         if (dto.isNew()) {
             ENTITY entity = mapper.toEntity(relationId, dto);
-            entity.nullifyZeroId();
             entity = repository.save(entity);
             DTO saved = mapper.toDto(entity);
             afterSaveHook(relationId, saved);
@@ -42,7 +47,6 @@ public abstract class AbsServiceExtCRUD<
         List<ENTITY> entities = mapper.toEntities(relationId, dtos);
         entities.forEach(e -> {
             if (!e.isNew()) throw new IllegalArgumentException(wrongIdMessage(e.getId()));
-            e.nullifyZeroId();
         });
         entities = repository.saveAll(entities);
         List<DTO> saved = mapper.toDtos(entities);
