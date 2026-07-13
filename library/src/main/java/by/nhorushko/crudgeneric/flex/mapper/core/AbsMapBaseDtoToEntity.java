@@ -63,6 +63,12 @@ public abstract class AbsMapBaseDtoToEntity<DTO extends AbsBaseDto, ENTITY exten
             ENTITY destination = context.getDestination();
             mapSpecificFields(source, destination);
             destination = handleAfterMapSpecificFields(source, destination);
+            if (destination != null) {
+                // Normalise the "id 0 = new" client sentinel in the converter, because this is the
+                // only hook that also fires for nested child entities during cascade mapping —
+                // persistOrMerge normalises the root entity only (mirrors the v2 fix in AbsMapperEntityDto).
+                destination.nullifyZeroId();
+            }
             return destination;
         };
     }

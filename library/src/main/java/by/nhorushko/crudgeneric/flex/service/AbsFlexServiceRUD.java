@@ -1,5 +1,6 @@
 package by.nhorushko.crudgeneric.flex.service;
 
+import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.util.FieldCopyUtil;
@@ -57,12 +58,15 @@ public abstract class AbsFlexServiceRUD<
     /**
      * Updates an entity with the given DTO.
      * <p>
-     * This method applies full updates to an entity based on the entirety of the provided DTO. It ensures
-     * that the entity's ID is present and then maps the DTO to an entity for persistence.
+     * The persistent entity is loaded by the DTO's id and the DTO is mapped onto it in place: only the
+     * properties the DTO carries are written, entity fields absent from the DTO (audit columns, versions,
+     * collections, relations) keep their persisted values. DTO properties holding {@code null} are skipped
+     * as well, in line with the library-wide {@code skipNullEnabled} ModelMapper setting.
      * </p>
      *
      * @param dto the DTO containing the updated data for the entity
      * @return the updated entity represented as a READ_DTO
+     * @throws AppNotFoundException if no entity with the DTO's id exists
      */
     public READ_DTO update(UPDATE_DTO dto) {
         return runUpdate(dto);
@@ -88,8 +92,10 @@ public abstract class AbsFlexServiceRUD<
         checkId(dto);
         beforeUpdateHook(dto);
         Optional<READ_DTO> previous = tryBeforeUpdateHook(dto);
-        ENTITY newValue = mapEntity(dto);
-        ENTITY actual = repository.save(newValue);
+        ENTITY entity = repository.findById(dto.getId())
+                .orElseThrow(() -> new AppNotFoundException(format("Entity id: %s was not found", dto.getId())));
+        mapper.map(dto, entity);
+        ENTITY actual = repository.save(entity);
         READ_DTO actualDto = mapReadDto(actual);
         afterUpdateHook(actualDto);
         previous.ifPresent(b -> ((AbsUpdateChangesHookable<ENTITY_ID, READ_DTO>) this).afterUpdateHook(b, actualDto));

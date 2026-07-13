@@ -50,6 +50,29 @@ public class AbsModelMapper {
     }
 
     /**
+     * Maps the source object onto an existing destination instance, in place.
+     * <p>
+     * Unlike {@link #map(Object, Class)}, no new destination object is created: only the properties
+     * covered by the source type's mapping are written, so destination fields the source does not
+     * carry keep their current values. This is the primitive behind the update path — an update DTO
+     * is mapped onto the persistent entity instead of being turned into a detached copy whose empty
+     * fields would overwrite persisted state on merge.
+     * </p>
+     *
+     * @param source      the source object to read from; if {@code null}, the destination is returned unchanged
+     * @param destination the existing object to write into
+     * @param <T>         the destination type
+     * @return the same {@code destination} instance, updated from the source
+     */
+    public <T> T map(Object source, T destination) {
+        if (source == null || destination == null) {
+            return destination;
+        }
+        modelMapper.map(source, destination);
+        return destination;
+    }
+
+    /**
      * Maps a collection of objects to a list of objects of a specified type.
      * <p>
      * This method processes each object in the provided collection, mapping them to the specified
