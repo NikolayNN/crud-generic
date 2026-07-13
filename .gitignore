@@ -1,1 +1,28 @@
+# Maven build output
+target/
+
+# IntelliJ IDEA / JetBrains
+.idea/
 *.iml
+*.ipr
+*.iws
+out/
+
+# Amplicode / JPA Buddy
+amplicode.xml
+.idea/amplicode-*.xml
+.idea/jpa-buddy.xml
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
