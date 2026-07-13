@@ -125,6 +125,11 @@ public abstract class AbsFlexMapConfigAbstract<CREATE_DTO extends AbsBaseDto, UP
     }
 
     protected AbsMapBasic<ENTITY, ENTITY> mapperEntityToEntity(AbsModelMapper mapper, Class<ENTITY> entityClass) {
+        // Several configs may share the same ENTITY (one per DTO set); the self-map must be
+        // registered only once or ModelMapper.createTypeMap throws "TypeMap already exists".
+        if (mapper.getModelMapper().getTypeMap(entityClass, entityClass) != null) {
+            return null;
+        }
         return new AbsMapBasic<>(mapper, entityClass, entityClass) {
         };
     }

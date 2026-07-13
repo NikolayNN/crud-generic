@@ -57,9 +57,7 @@ public abstract class AbsMapBasic<FROM, TO> implements RegisterableMapper {
      * the source and destination types. This object can be further customized if needed.
      */
     protected final TypeMap<FROM, TO> configureMapper() {
-        TypeMap<FROM, TO> typeMap = mapper.getModelMapper().createTypeMap(fromClass, toClass);
-        customizeTypeMap(typeMap);
-        return typeMap;
+        return mapper.getModelMapper().createTypeMap(fromClass, toClass);
     }
 
     /**

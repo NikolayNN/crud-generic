@@ -78,9 +78,9 @@ public abstract class AbsFlexServiceExtCRUD<
     public READ_DTO save(EXT_ID relationId, CREATE_DTO dto) {
         beforeSaveHook(relationId, dto);
         ENTITY entity = extMapper.map(relationId, dto);
-        // Create-only path: CREATE_DTO (AbsCreateDto) carries no id and the mapper nulls a sentinel 0,
-        // so the entity has a null id and Spring Data routes save() to persist (no Hibernate 6.6
-        // merge-of-absent-row). persistOrMerge is therefore not needed here.
+        // Create-only path: the guard keeps the entity id null, so Spring Data routes save()
+        // to persist (no Hibernate 6.6 merge-of-absent-row) and persistOrMerge is not needed.
+        checkNew(entity);
         entity = repository.save(entity);
         READ_DTO actual = mapReadDto(entity);
         afterSaveHook(relationId, actual);
@@ -129,15 +129,20 @@ public abstract class AbsFlexServiceExtCRUD<
      * @return a list of the saved entities represented as READ_DTOs
      */
     public List<READ_DTO> saveAll(EXT_ID relationId, Collection<CREATE_DTO> dtos) {
-        List<ENTITY> entities = extMapper.mapAll(relationId, dtos);
-        entities.forEach(e -> {
-            if (!e.isNew()) throw new IllegalArgumentException(wrongIdMessage(e.getId()));
-        });
+        // Hooks may mutate the DTOs (defaults, normalisation), so they must run before mapping.
         dtos.forEach(dto -> beforeSaveHook(relationId, dto));
+        List<ENTITY> entities = extMapper.mapAll(relationId, dtos);
+        entities.forEach(this::checkNew);
         entities = repository.saveAll(entities);
         List<READ_DTO> actualList = mapAllReadDto(entities);
         actualList.forEach(actual -> afterSaveHook(relationId, actual));
         return actualList;
+    }
+
+    private void checkNew(ENTITY entity) {
+        if (!entity.isNew()) {
+            throw new IllegalArgumentException(wrongIdMessage(entity.getId()));
+        }
     }
 
     private String wrongIdMessage(ENTITY_ID id) {
