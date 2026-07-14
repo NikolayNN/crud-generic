@@ -24,11 +24,14 @@ disallowed operations are not rejected today.
 
 Decisions made with the owner:
 1. The fix lands in **crud-generic 5.0** (`flex.pageable`), not in LocatorServer.
-2. The **HTTP API does not change**: explicit per-field `@RequestParam`s, wire format
-   `like#foo` / `btn#a,b`, sort `asc#field`/`desc#field`/`+field`/`-field` stay as they are.
-3. The old mechanism is **fully replaced** (no parallel API): `AbsFilterSpecification` and the
+2. The **HTTP API does not change** for filters: explicit per-field `@RequestParam`s and the
+   wire format `like#foo` / `btn#a,b` stay as they are.
+3. The legacy `+field`/`-field` sort variant is **dropped** — it caused real problems (`+` is
+   URL-decoded to a space). Accepted sort syntax: `asc#field`, `desc#field`, or a bare `field`
+   (ascending).
+4. The old mechanism is **fully replaced** (no parallel API): `AbsFilterSpecification` and the
    `buildSpecification` switch are deleted.
-4. Approach: **fluent registry declared in the pageable service** (one line per field), not
+5. Approach: **fluent registry declared in the pageable service** (one line per field), not
    entity annotations (a web contract doesn't belong on JPA entities, and one entity may serve
    two endpoints with different filter sets) and not a data-only specs class (would keep a
    pure-boilerplate bean per entity).
@@ -62,9 +65,13 @@ allowed `FilterOperation`s. Registry responsibilities:
     `alwaysTrue`/empty-filter semantics;
   - `custom` entries delegate straight to the factory — no operation validation (the factory
     owns the behaviour).
-- **`String sortPath(String sortExpression)`** — normalises `asc#`/`desc#` to `+`/`-` and maps
-  the property through the registry (`userId` → `user.id`); an unknown property passes through
-  unchanged (same as today's `handleSort`). Consumed by `PageableUtils.buildPageRequest`.
+- **`Sort sort(String sortExpression)`** — parses `asc#field` / `desc#field` / bare `field`
+  (ascending), maps the property through the registry (`userId` → `user.id`) and returns a
+  Spring `Sort` directly; an unknown property passes through unchanged (same as today's
+  `handleSort`). A legacy `+`/`-` prefix or any other malformed expression →
+  `FilterValidationException`. Single-property sort, as today. The service builds
+  `PageRequest.of(page, size, sort)` itself — the `PageableUtils` →
+  `PageRequestBuilder` string round-trip is gone from this path.
 
 Builder rules (fail fast at startup, all `IllegalStateException`):
 - typed entries must declare at least one operation;
@@ -112,8 +119,10 @@ Reworked:
 - abstract `buildSpecification(Filter)` and the `SPECS` parameter on
   `AbsFlexPagingAndSortingService`.
 
-`PageFilterRequest`, `FilterGroupBuilder`, `BasePageRequest`, `PageableUtils` and the
-filter-specifications-lib dependency are unchanged.
+`PageFilterRequest`, `FilterGroupBuilder` and the filter-specifications-lib dependency are
+unchanged. `PageableUtils` stays (applications use it directly) but is no longer referenced by
+`AbsFlexPagingAndSortingService`. `BasePageRequest` changes its default sort from `-id` to
+`desc#id` and its javadoc examples to the `asc#`/`desc#` syntax.
 
 ## Migration (README, Migration-to-5.0 section)
 
@@ -151,6 +160,11 @@ documentation only; enforcement is automatic. Hardcoded one-off specs like `oneO
 (`cb.isFalse`) become regular declarations: `.ofBoolean("oneOff", EQUAL)` in the registry plus
 `buildFilter(EQUAL, false)` in the controller.
 
+Sort parameters: endpoints (and clients) using the legacy `+field`/`-field` syntax must switch
+to `asc#field`/`desc#field` — after 5.0 the legacy prefixes are rejected with a 400. Defaults
+like `@RequestParam(defaultValue = "desc#createdTime")` already comply; `BasePageRequest`
+subclasses relying on the old `-id` default pick up `desc#id` automatically.
+
 A field is now declared in **two** places: one registry line + one controller parameter
 (down from five).
 
@@ -159,7 +173,8 @@ A field is now declared in **two** places: one registry line + one controller pa
 - **library** (no Spring context): `FilterFields` builder — every typed method, nested path,
   custom entry, duplicate name rejected, missing converter rejected, no-ops entry rejected;
   `toSpecification` — disallowed operation and unknown field throw, blank value skips;
-  `sortPath` — `asc#`/`desc#` normalisation, mapped property, pass-through.
+  `sort` — `asc#`/`desc#`/bare-field parsing, mapped property, pass-through, legacy `+`/`-`
+  rejected.
 - **test-application** (new ITs; pageable has no coverage there today): a paged endpoint over an
   H2-backed flex entity exercising string CONTAINS, long EQUAL on a nested path, instant
   BETWEEN, combined AND filters, sort by a mapped property, and HTTP 400 for a disallowed
