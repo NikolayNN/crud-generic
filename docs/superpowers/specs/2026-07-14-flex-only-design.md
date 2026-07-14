@@ -69,7 +69,8 @@ Behaviour changes nowhere: only package moves, import updates, and deletions.
 - Flex tests: import updates only.
 - `AbsMapperEagerInitPostProcessorTest`: assertions for the v1/v2 branches removed, flex-type
   assertions kept.
-- Shared test fixtures (`Car`, `User`, `Message` + entities) kept with import updates.
+- Test fixtures (`Car`, `User`, `Message` + entities) deleted with the v2 tests — grep shows
+  they are used only by v2 tests (flex tests define their own local fixtures).
 
 ## test-application migration
 
