@@ -150,15 +150,15 @@ public abstract class AbsFlexServiceRUD<
      * Deletes an entity by its ID.
      * <p>
      * This method removes the entity with the specified ID from the repository, effectively deleting it from the system.
+     * The operation is idempotent: when no entity with the given id exists, the call is a silent no-op.
      * Hooks are provided for executing logic before and after the deletion; they run only when the entity exists.
      * </p>
      *
      * @param id the ID of the entity to delete
-     * @throws AppNotFoundException if no entity with the given id exists
      */
     public void delete(ENTITY_ID id) {
         if (!repository.existsById(id)) {
-            throw new AppNotFoundException(format("Entity id: %s was not found", id));
+            return;
         }
         beforeDeleteHook(id);
         repository.deleteById(id);

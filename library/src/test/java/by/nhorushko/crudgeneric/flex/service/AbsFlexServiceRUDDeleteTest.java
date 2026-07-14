@@ -1,6 +1,5 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
@@ -18,7 +17,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -63,14 +61,10 @@ public class AbsFlexServiceRUDDeleteTest {
     }
 
     @Test
-    public void deleteMissingIdThrowsAndSkipsHooksAndDeletion() {
+    public void deleteMissingIdIsSilentNoOpAndSkipsHooks() {
         when(repository.existsById(9L)).thenReturn(false);
 
-        try {
-            service.delete(9L);
-            fail("expected AppNotFoundException for a missing id");
-        } catch (AppNotFoundException expected) {
-        }
+        service.delete(9L);
 
         verify(repository, never()).deleteById(any());
         assertTrue(events.isEmpty());

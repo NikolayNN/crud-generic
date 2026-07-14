@@ -1,6 +1,5 @@
 package by.nhorushko.crudgenerictest.service;
 
-import by.nhorushko.crudgeneric.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.entity.OrderEntity;
 import by.nhorushko.crudgenerictest.domain.entity.OrderLineEntity;
 import by.nhorushko.crudgenerictest.repository.OrderLineRepository;
@@ -11,12 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Regression tests for the flex delete path: deleting an existing entity
- * removes it (with cascaded children), deleting a missing id must fail loudly
- * instead of being a silent no-op.
+ * removes it (with cascaded children), deleting a missing id is an idempotent
+ * no-op.
  */
 @SpringBootTest
 class FlexDeleteIT {
@@ -44,9 +43,9 @@ class FlexDeleteIT {
     }
 
     @Test
-    void deleteMissingIdThrowsAppNotFound() {
-        assertThatThrownBy(() -> service.delete(999_999L))
-                .isInstanceOf(AppNotFoundException.class);
+    void deleteMissingIdIsSilentNoOp() {
+        assertThatCode(() -> service.delete(999_999L))
+                .doesNotThrowAnyException();
     }
 
     private OrderEntity persistedOrder(String name, String... lineTitles) {
