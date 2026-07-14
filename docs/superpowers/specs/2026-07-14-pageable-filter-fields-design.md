@@ -50,8 +50,9 @@ f.string("name", CONTAINS)                                  // path = name
  .instant("archivedAt", GT, GTE, LT, LTE, BETWEEN, IS_NULL, NOT_NULL)
  .instant("createdTime", GT, GTE, LT, LTE, BETWEEN)
  .ofBoolean("oneOff", EQUAL)
- .field("status", "job.status", JobStatus.class, EQUAL, IN) // any type with a registered converter
- .custom("special", filter -> (root, q, cb) -> ...)         // escape hatch, builds Specification manually
+ .ofEnum("status", "job.status", JobStatus.class, EQUAL, IN) // converter derived from the enum class
+ .field("score", "rating.score", BigDecimal.class, GT, LT)   // any type with a registered converter
+ .custom("special", filter -> (root, q, cb) -> ...)          // escape hatch, builds Specification manually
  .build();
 ```
 
@@ -76,13 +77,22 @@ allowed `FilterOperation`s. Registry responsibilities:
 Builder rules (fail fast at startup, all `IllegalStateException`):
 - typed entries must declare at least one operation;
 - duplicate names are rejected;
-- `build()` verifies a converter is registered in `Converters` for every declared type.
+- `build()` verifies a converter is registered in `Converters` for every declared type —
+  except entries that carry their own converter (`ofEnum`) and `custom` entries.
 
 Convenience methods cover the types with default converters: `string`, `ofLong`, `ofInteger`,
 `ofDouble`, `ofFloat`, `ofBoolean`, `instant` (each with `(name, ops...)` and
-`(name, path, ops...)` overloads). Everything else goes through
-`field(name, path, type, ops...)` plus a converter registered in the application's `Converters`
-subclass, or through `custom`.
+`(name, path, ops...)` overloads).
+
+**`ofEnum(name, [path,] enumClass, ops...)`** carries its own converter derived from the class
+(`Enum.valueOf`), so enums need **no registration in `Converters` at all** — today every enum
+filter costs an extra `map.put(X.class, X::valueOf)` line in the application's `Converters`
+subclass (LocatorServer's `ConvertersExt` has eight such lines). An unknown constant in the
+request is a client error: it is wrapped in `FilterValidationException` (400), not surfaced as
+a raw `IllegalArgumentException` (500).
+
+Everything else goes through `field(name, path, type, ops...)` plus a converter registered in
+the application's `Converters` subclass, or through `custom`.
 
 Internally the registry instantiates the stateless `FilterSpecifications<ENTITY, T>` helpers
 from filter-specifications-lib directly (`new`), replacing the eight `@Lazy @Autowired`
@@ -160,6 +170,10 @@ documentation only; enforcement is automatic. Hardcoded one-off specs like `oneO
 (`cb.isFalse`) become regular declarations: `.ofBoolean("oneOff", EQUAL)` in the registry plus
 `buildFilter(EQUAL, false)` in the controller.
 
+Enum filters: entries migrated to `ofEnum` no longer need their `map.put(X.class, X::valueOf)`
+line in the application's `Converters` subclass — once all pageable services are migrated,
+LocatorServer's `ConvertersExt` shrinks to the `LocalDate`/`LocalDateTime` converters.
+
 Sort parameters: endpoints (and clients) using the legacy `+field`/`-field` syntax must switch
 to `asc#field`/`desc#field` — after 5.0 the legacy prefixes are rejected with a 400. Defaults
 like `@RequestParam(defaultValue = "desc#createdTime")` already comply; `BasePageRequest`
@@ -171,8 +185,10 @@ A field is now declared in **two** places: one registry line + one controller pa
 ## Tests
 
 - **library** (no Spring context): `FilterFields` builder — every typed method, nested path,
-  custom entry, duplicate name rejected, missing converter rejected, no-ops entry rejected;
-  `toSpecification` — disallowed operation and unknown field throw, blank value skips;
+  enum entry without a registered converter, custom entry, duplicate name rejected, missing
+  converter rejected, no-ops entry rejected;
+  `toSpecification` — disallowed operation, unknown field and unknown enum constant throw,
+  blank value skips;
   `sort` — `asc#`/`desc#`/bare-field parsing, mapped property, pass-through, legacy `+`/`-`
   rejected.
 - **test-application** (new ITs; pageable has no coverage there today): a paged endpoint over an
