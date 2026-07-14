@@ -142,7 +142,6 @@ Version 5.0 removes the legacy v1 (`by.nhorushko.crudgeneric.*` root packages) a
 | `by.nhorushko.crudgeneric.util.FieldCopyUtil` | `by.nhorushko.crudgeneric.flex.util.FieldCopyUtil` |
 | `by.nhorushko.crudgeneric.util.PageableUtils` | `by.nhorushko.crudgeneric.flex.util.PageableUtils` |
 | `by.nhorushko.crudgeneric.v2.pageable.PageFilterRequest` | `by.nhorushko.crudgeneric.flex.pageable.PageFilterRequest` |
-| `by.nhorushko.crudgeneric.v2.pageable.AbsFilterSpecification` | `by.nhorushko.crudgeneric.flex.pageable.AbsFilterSpecification` |
 | `by.nhorushko.crudgeneric.v2.pageable.FilterGroupBuilder` | `by.nhorushko.crudgeneric.flex.pageable.FilterGroupBuilder` |
 | `by.nhorushko.crudgeneric.v2.pageable.AbsFlexPagingAndSortingService` | `by.nhorushko.crudgeneric.flex.pageable.AbsFlexPagingAndSortingService` |
 | `by.nhorushko.crudgeneric.v2.controller.BasePageRequest` | `by.nhorushko.crudgeneric.flex.pageable.BasePageRequest` |
@@ -155,11 +154,54 @@ Version 5.0 removes the legacy v1 (`by.nhorushko.crudgeneric.*` root packages) a
 | `v2.AbsServiceExtCRUD` | `AbsFlexServiceExtCRUD` |
 | `ImmutableDtoAbstractMapper`, `AbstractMapper`, `v2.AbsMapperDto/AbsMapperEntityDto/AbsMapperEntityExtDto/AbsMapperBase` | `AbsFlexMapConfigDefault` (one config per entity registers create/update/read maps) |
 | v1 `*RestController`, `v2.AbsControllerR/RU/RUD/CRUD/ExtCRUD` | `AbsFlexControllerR` / `AbsFlexControllerRU` / `AbsFlexControllerRUD` / `AbsFlexControllerCRUD` / `AbsFlexControllerExtCRUD` |
-| `v2.pageable.AbsPagingAndSortingService` (deprecated) | `AbsFlexPagingAndSortingService` (constructor takes the repository + filter specs; implement `toDto` and `buildSpecification`) |
+| `v2.pageable.AbsPagingAndSortingService` (deprecated), `v2.pageable.AbsFilterSpecification` + per-entity `FilterSpecification*` subclasses | `AbsFlexPagingAndSortingService` + one `filterFields(builder)` declaration (see “Pageable in 5.0” below) |
 | `PagingAndSortingImmutableGenericService`, `PageableGenericRestController` | `AbsFlexPagingAndSortingService` + your own controller endpoint building a `PageFilterRequest` |
-| `SpecificationUtils` | Removed with no direct replacement — compose `org.springframework.data.jpa.domain.Specification` instances directly, or use `AbsFilterSpecification` + `PageFilterRequest` for filter-driven paging |
+| `SpecificationUtils` | Removed with no direct replacement — compose `org.springframework.data.jpa.domain.Specification` instances directly, or use `AbsFlexPagingAndSortingService` + `PageFilterRequest` for filter-driven paging |
 
 Notes:
 - Flex `save()` is an upsert (`persistOrMerge`): id `null`/`0` or an absent assigned id inserts; an existing id updates.
 - `delete(missingId)` is a silent no-op (idempotent).
 - The sentinel id `0` is treated as "new" and normalised to `null` on every save path.
+
+### Pageable in 5.0 — declarative FilterFields
+
+`AbsFilterSpecification` (the path/type map base class) and the per-service `buildSpecification` switch are
+replaced by a single declaration. Per entity: delete the `FilterSpecification*` class, fold its
+map and the switch into `filterFields(builder)`, drop the `toDto` override if the default
+mapper-based one suffices:
+
+```java
+@Service
+public class RtRoutePageableService
+        extends AbsFlexPagingAndSortingService<Long, RtRoute, RtRouteEntity> {
+
+    public RtRoutePageableService(RtRouteRepository repository, AbsModelMapper mapper) {
+        super(repository, mapper, RtRoute.class);
+    }
+
+    @Override
+    protected FilterFields<RtRouteEntity> filterFields(FilterFields.Builder<RtRouteEntity> f) {
+        return f.string("name", CONTAINS)
+                .string("description", CONTAINS)
+                .ofLong("userId", "user.id", EQUAL)
+                .instant("archivedAt", GREATER_THAN, GREATER_THAN_OR_EQUAL_TO, LESS_THAN, LESSTHAN_OR_EQUAL_TO, BETWEEN, IS_NULL, NOT_NULL)
+                .instant("createdTime", GREATER_THAN, GREATER_THAN_OR_EQUAL_TO, LESS_THAN, LESSTHAN_OR_EQUAL_TO, BETWEEN)
+                .ofBoolean("oneOff", EQUAL)
+                .build();
+    }
+}
+```
+
+- Operation validation is always on: unknown field, disallowed operation, unconvertible value
+  or malformed sort raise `FilterValidationException` — map it to HTTP 400 in your exception
+  handler. Controller-side `isAvailableOperation`/`checkFilterOperation` calls and the ops
+  `Set` constants are deleted.
+- Typed builder methods (`string`, `ofLong`, `ofInteger`, `ofDouble`, `ofFloat`, `ofBoolean`,
+  `instant`, `ofLocalDate`, `ofLocalDateTime`, `ofEnum`) carry built-in converters. Enum and
+  date entries no longer need `map.put(X.class, X::valueOf)` in your `Converters` subclass —
+  delete the subclass if only `field()`-free declarations remain. `field(name, path, type, ops)`
+  is the only method that reads `Converters` (pass it via the 4-arg service constructor).
+- Custom one-off specs move to `.custom(name, filter -> Specification)`.
+- **Sort syntax narrowed**: `asc#field`, `desc#field` or bare `field` (ascending). The legacy
+  `+field`/`-field` prefixes are rejected with `FilterValidationException` (in URLs `+` decodes
+  to a space). `BasePageRequest`'s default sort changed from `-id` to `desc#id`.

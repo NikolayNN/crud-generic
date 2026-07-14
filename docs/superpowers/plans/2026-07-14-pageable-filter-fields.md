@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Build with **JDK 17** (`JAVA_HOME` must point at a JDK 17).
+- Build with **JDK 17**. On this machine `JAVA_HOME` defaults to JDK 11, which Maven uses — so **every** `mvn` command must be prefixed to override it. Git Bash: `export JAVA_HOME="C:\Program Files\Java\jdk-17"; mvn ...`. PowerShell: `$env:JAVA_HOME="C:\Program Files\Java\jdk-17"; mvn ...`. Without this the Java-17 source fails to compile under javac 11.
 - Library version stays `5.0-SNAPSHOT`; test-application depends on it from the local repo — after library changes run `mvn -f library/pom.xml install` before building test-application.
 - Wire format for filter values is **unchanged**: `like#foo`, `eq#5`, `btn#a,b`, `en#null` (`FilterOperation` codes: eq, neq, gt, gte, lt, lte, in, nin, btn, like, en, nn).
 - Sort syntax accepted after this change: `asc#field`, `desc#field`, bare `field` (= ascending). Legacy `+field`/`-field` → `FilterValidationException`.

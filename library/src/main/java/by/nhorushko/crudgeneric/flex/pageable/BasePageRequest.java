@@ -21,7 +21,7 @@ import lombok.Data;
  *     public CustomPageRequest() {
  *         this.page = 1;  // Set default page number to 1
  *         this.size = 25; // Set default page size to 25
- *         this.sort = "-customField"; // Set default sort criterion
+ *         this.sort = "desc#customField"; // Set default sort criterion
  *     }
  * }
  * }</pre>
@@ -47,13 +47,13 @@ public class BasePageRequest {
     protected int size = 20;
 
     /**
-     * The sorting criterion used to order the data returned in the page. The format for this
-     * parameter is a sort key prefixed with an optional "-" for descending order. By default,
+     * The sorting criterion used to order the data returned in the page. The format is
+     * {@code asc#field} or {@code desc#field}; a bare field name sorts ascending. By default,
      * records are sorted by the ID in descending order.
      *
-     * Example: "-startTime" sorts by startTime in descending order, while "startTime" sorts
-     * in ascending order.
+     * Example: "desc#startTime" sorts by startTime in descending order, while "asc#startTime"
+     * (or "startTime") sorts in ascending order.
      */
-    @Parameter(description = "sort Criteria. Example: sort=-startTime [startTime, status]")
-    protected String sort = "-id";
+    @Parameter(description = "sort Criteria. Example: sort=desc#startTime [startTime, status]")
+    protected String sort = "desc#id";
 }

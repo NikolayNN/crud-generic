@@ -11,11 +11,11 @@ public class PageFilterRequest {
     private int page;
     private int pageSize;
     /**
-     * sort look like sign + OR - and property name
-     * +id
-     * -id
-     * +name
-     * -name
+     * sort looks like asc# OR desc# and property name (bare property name = ascending):
+     * asc#id
+     * desc#id
+     * asc#name
+     * desc#name
      */
     private String sort;
     private FilterGroup filterGroup;
