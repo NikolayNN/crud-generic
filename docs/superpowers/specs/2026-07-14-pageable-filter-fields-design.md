@@ -41,7 +41,8 @@ Decisions made with the owner:
 ### `FilterFields<ENTITY>`
 
 Immutable registry of filterable fields — the single place a field is declared. Built via
-`FilterFields.builder(converters)`:
+`FilterFields.builder()` or `FilterFields.builder(converters)` (the latter only needed when
+`field()` entries are used):
 
 ```java
 f.string("name", CONTAINS)                                  // path = name
@@ -49,6 +50,7 @@ f.string("name", CONTAINS)                                  // path = name
  .ofLong("userId", "user.id", EQUAL)                        // path differs from name
  .instant("archivedAt", GT, GTE, LT, LTE, BETWEEN, IS_NULL, NOT_NULL)
  .instant("createdTime", GT, GTE, LT, LTE, BETWEEN)
+ .ofLocalDate("reportDate", GTE, LTE, BETWEEN)
  .ofBoolean("oneOff", EQUAL)
  .ofEnum("status", "job.status", JobStatus.class, EQUAL, IN) // converter derived from the enum class
  .field("score", "rating.score", BigDecimal.class, GT, LT)   // any type with a registered converter
@@ -77,34 +79,39 @@ allowed `FilterOperation`s. Registry responsibilities:
 Builder rules (fail fast at startup, all `IllegalStateException`):
 - typed entries must declare at least one operation;
 - duplicate names are rejected;
-- `build()` verifies a converter is registered in `Converters` for every declared type —
-  except entries that carry their own converter (`ofEnum`) and `custom` entries.
+- `build()` verifies a `Converters` converter exists for every `field()` entry — the only kind
+  without a built-in converter; declaring a `field()` entry on a builder created without
+  `Converters` is likewise rejected.
 
-Convenience methods cover the types with default converters: `string`, `ofLong`, `ofInteger`,
-`ofDouble`, `ofFloat`, `ofBoolean`, `instant` (each with `(name, ops...)` and
-`(name, path, ops...)` overloads).
+All typed convenience methods carry **built-in converters** — `Converters` is not consulted:
+`string` (identity), `ofLong`, `ofInteger`, `ofDouble`, `ofFloat`, `ofBoolean` (`X::valueOf`),
+`instant` (`Instant::parse`), `ofLocalDate` (`LocalDate::parse`), `ofLocalDateTime`
+(`LocalDateTime::parse`) — each with `(name, ops...)` and `(name, path, ops...)` overloads.
 
-**`ofEnum(name, [path,] enumClass, ops...)`** carries its own converter derived from the class
-(`Enum.valueOf`), so enums need **no registration in `Converters` at all** — today every enum
-filter costs an extra `map.put(X.class, X::valueOf)` line in the application's `Converters`
-subclass (LocatorServer's `ConvertersExt` has eight such lines). An unknown constant in the
-request is a client error: it is wrapped in `FilterValidationException` (400), not surfaced as
-a raw `IllegalArgumentException` (500).
+**`ofEnum(name, [path,] enumClass, ops...)`** derives its converter from the class
+(`Enum.valueOf`), so enums need no registration anywhere — today every enum filter costs an
+extra `map.put(X.class, X::valueOf)` line in the application's `Converters` subclass
+(LocatorServer's `ConvertersExt` has eight such lines).
 
-Everything else goes through `field(name, path, type, ops...)` plus a converter registered in
-the application's `Converters` subclass, or through `custom`.
+A value that fails conversion — unknown enum constant, malformed number or date — is a client
+error: it is wrapped in `FilterValidationException` (400). Today `userId=eq#abc` surfaces a raw
+`NumberFormatException` (500).
+
+Only `field(name, path, type, ops...)` uses a converter registered in the application's
+`Converters` subclass; `custom` bypasses conversion entirely.
 
 Internally the registry instantiates the stateless `FilterSpecifications<ENTITY, T>` helpers
 from filter-specifications-lib directly (`new`), replacing the eight `@Lazy @Autowired`
 generic-injection fields of `AbsFilterSpecification`. The filter layer no longer depends on
-Spring wiring; unit tests need no context. `Converters` stays injected — it is abstract and
-applications register custom converters by subclassing it.
+Spring wiring; unit tests need no context. `Converters` (abstract, subclassed by the
+application) is injected only by services that declare `field()` entries.
 
 ### `FilterValidationException`
 
-New in `flex.exception`: `FilterValidationException extends RuntimeException` with fields
-`field`, `operation`, `allowedOperations` and a message in the spirit of
-`checkFilterOperation` (`"Filter: 'name', expect operations: '[like]', but was 'eq'"`).
+New in `flex.exception`: `FilterValidationException extends RuntimeException` raised for every
+client-side filter error — unknown field, disallowed operation, unconvertible value, malformed
+sort expression — with a message in the spirit of `checkFilterOperation`
+(`"Filter: 'name', expect operations: '[like]', but was 'eq'"`).
 Applications map it to HTTP 400 in their exception handlers (README notes this).
 
 ### `AbsFlexPagingAndSortingService<ID, DTO, ENTITY>`
@@ -113,7 +120,8 @@ Reworked:
 
 - the `SPECS` type parameter disappears;
 - constructor: `(JpaSpecificationExecutor<ENTITY> repository, AbsModelMapper mapper,
-  Class<DTO> dtoClass, Converters converters)`;
+  Class<DTO> dtoClass)`, plus an overload with a trailing `Converters` parameter for services
+  that declare `field()` entries;
 - one abstract method replaces the old two:
   `protected abstract FilterFields<ENTITY> filterFields(FilterFields.Builder<ENTITY> f);`
   invoked lazily on first use and cached (not from the constructor — it is overridable and may
@@ -145,9 +153,8 @@ default suffices. Reference before/after (RtRoute):
 public class RtRoutePageableService
         extends AbsFlexPagingAndSortingService<Long, RtRoute, RtRouteEntity> {
 
-    public RtRoutePageableService(RtRouteRepository repository, AbsModelMapper mapper,
-                                  Converters converters) {
-        super(repository, mapper, RtRoute.class, converters);
+    public RtRoutePageableService(RtRouteRepository repository, AbsModelMapper mapper) {
+        super(repository, mapper, RtRoute.class);
     }
 
     @Override
@@ -170,9 +177,10 @@ documentation only; enforcement is automatic. Hardcoded one-off specs like `oneO
 (`cb.isFalse`) become regular declarations: `.ofBoolean("oneOff", EQUAL)` in the registry plus
 `buildFilter(EQUAL, false)` in the controller.
 
-Enum filters: entries migrated to `ofEnum` no longer need their `map.put(X.class, X::valueOf)`
-line in the application's `Converters` subclass — once all pageable services are migrated,
-LocatorServer's `ConvertersExt` shrinks to the `LocalDate`/`LocalDateTime` converters.
+Converters: after migrating to typed builder methods (`ofEnum` for the eight enum entries,
+`ofLocalDate`/`ofLocalDateTime` for the date entries), LocatorServer's `ConvertersExt` has no
+remaining content and is **deleted**; a `Converters` subclass is only kept by applications that
+use `field()` with exotic types.
 
 Sort parameters: endpoints (and clients) using the legacy `+field`/`-field` syntax must switch
 to `asc#field`/`desc#field` — after 5.0 the legacy prefixes are rejected with a 400. Defaults
@@ -185,10 +193,10 @@ A field is now declared in **two** places: one registry line + one controller pa
 ## Tests
 
 - **library** (no Spring context): `FilterFields` builder — every typed method, nested path,
-  enum entry without a registered converter, custom entry, duplicate name rejected, missing
-  converter rejected, no-ops entry rejected;
-  `toSpecification` — disallowed operation, unknown field and unknown enum constant throw,
-  blank value skips;
+  custom entry, duplicate name rejected, no-ops entry rejected, `field()` without `Converters`
+  or without a registered converter rejected at `build()`;
+  `toSpecification` — disallowed operation, unknown field and unconvertible value (enum
+  constant, number, date) throw `FilterValidationException`, blank value skips;
   `sort` — `asc#`/`desc#`/bare-field parsing, mapped property, pass-through, legacy `+`/`-`
   rejected.
 - **test-application** (new ITs; pageable has no coverage there today): a paged endpoint over an
