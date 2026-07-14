@@ -78,8 +78,9 @@ public abstract class AbsFlexServiceExtCRUD<
     public READ_DTO save(EXT_ID relationId, CREATE_DTO dto) {
         beforeSaveHook(relationId, dto);
         ENTITY entity = extMapper.map(relationId, dto);
-        // Create-only path: the guard keeps the entity id null, so Spring Data routes save()
-        // to persist (no Hibernate 6.6 merge-of-absent-row) and persistOrMerge is not needed.
+        // Create-only path: real ids are rejected and the sentinel id 0 is normalised to null,
+        // so Spring Data routes save() to persist (no Hibernate 6.6 merge-of-absent-row) and
+        // persistOrMerge is not needed.
         checkNew(entity);
         entity = repository.save(entity);
         READ_DTO actual = mapReadDto(entity);
@@ -143,6 +144,7 @@ public abstract class AbsFlexServiceExtCRUD<
         if (!entity.isNew()) {
             throw new IllegalArgumentException(wrongIdMessage(entity.getId()));
         }
+        entity.nullifyZeroId();
     }
 
     private String wrongIdMessage(ENTITY_ID id) {

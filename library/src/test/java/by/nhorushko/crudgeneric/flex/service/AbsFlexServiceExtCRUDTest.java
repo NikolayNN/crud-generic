@@ -73,6 +73,44 @@ public class AbsFlexServiceExtCRUDTest {
     }
 
     /**
+     * The sentinel id 0 marks a new entity ({@code isNew()} contract). It must pass the
+     * create guard and be normalised to {@code null} before the repository call, otherwise
+     * Spring Data sees a non-null id and routes the save through merge instead of persist.
+     */
+    @Test
+    public void saveTreatsZeroIdAsNewAndNullifiesItBeforeSave() {
+        when(extMapper.map(eq(RELATION_ID), any(ItemCreate.class))).thenReturn(entity(0L));
+        List<Long> idsAtSaveTime = new ArrayList<>();
+        when(repository.save(any(ItemEntity.class))).thenAnswer(invocation -> {
+            ItemEntity entity = invocation.getArgument(0);
+            idsAtSaveTime.add(entity.getId());
+            return entity;
+        });
+        when(mapper.map(any(ItemEntity.class), eq(ItemDto.class))).thenReturn(new ItemDto(1L, "hooked"));
+
+        service.save(RELATION_ID, new ItemCreate("item"));
+
+        assertEquals(singletonList((Long) null), idsAtSaveTime);
+    }
+
+    @Test
+    public void saveAllTreatsZeroIdAsNewAndNullifiesItBeforeSave() {
+        when(extMapper.mapAll(eq(RELATION_ID), anyCollection()))
+                .thenReturn(new ArrayList<>(singletonList(entity(0L))));
+        List<Long> idsAtSaveTime = new ArrayList<>();
+        when(repository.saveAll(anyList())).thenAnswer(invocation -> {
+            List<ItemEntity> entities = invocation.getArgument(0);
+            entities.forEach(entity -> idsAtSaveTime.add(entity.getId()));
+            return entities;
+        });
+        when(mapper.mapAll(anyCollection(), eq(ItemDto.class))).thenReturn(singletonList(new ItemDto(1L, "hooked")));
+
+        service.saveAll(RELATION_ID, singletonList(new ItemCreate("item")));
+
+        assertEquals(singletonList((Long) null), idsAtSaveTime);
+    }
+
+    /**
      * beforeSaveHook may mutate the DTO (defaults, normalisation), so it must
      * run before the DTOs are mapped to entities — as save() already does.
      */
