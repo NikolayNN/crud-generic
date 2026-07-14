@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex;
 
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;

@@ -7,8 +7,8 @@ import by.nhorushko.crudgeneric.flex.mapper.AbsMapUpdateDtoToEntity;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapDtoToEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import org.modelmapper.TypeMap;
 
 

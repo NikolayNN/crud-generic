@@ -1,8 +1,8 @@
 package by.nhorushko.crudgeneric.flex.mapper.core;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 
 /**
  * Abstract mapper for converting DTOs extending {@link AbstractDto} into entities extending {@link AbstractEntity}.

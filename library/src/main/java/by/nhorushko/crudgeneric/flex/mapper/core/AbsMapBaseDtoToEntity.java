@@ -2,7 +2,7 @@ package by.nhorushko.crudgeneric.flex.mapper.core;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeMap;

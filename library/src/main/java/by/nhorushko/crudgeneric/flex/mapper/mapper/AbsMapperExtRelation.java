@@ -2,7 +2,7 @@ package by.nhorushko.crudgeneric.flex.mapper.mapper;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.lang.reflect.Field;

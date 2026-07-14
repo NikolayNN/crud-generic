@@ -1,12 +1,12 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.exception.AppNotFoundException;
+import by.nhorushko.crudgeneric.flex.exception.AppNotFoundException;
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
-import by.nhorushko.crudgeneric.util.FieldCopyUtil;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
-import by.nhorushko.crudgeneric.v2.domain.IdEntity;
+import by.nhorushko.crudgeneric.flex.util.FieldCopyUtil;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.IdEntity;
 import lombok.Getter;
 import org.springframework.data.jpa.repository.JpaRepository;
 

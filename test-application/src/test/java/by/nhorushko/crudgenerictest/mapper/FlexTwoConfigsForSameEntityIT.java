@@ -4,7 +4,7 @@ import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.composite.AbsFlexMapConfigDefault;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgenerictest.domain.dto.OrderDto;
 import by.nhorushko.crudgenerictest.domain.entity.OrderEntity;
 import lombok.AllArgsConstructor;

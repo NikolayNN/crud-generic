@@ -31,10 +31,9 @@ class EagerTypeMapRegistrationDisabledTest {
     private ConfigurableApplicationContext applicationContext;
 
     @Test
-    void mockAImmutableMapper_beanDefinitionRemainsLazy() {
+    void orderViewMapper_beanDefinitionRemainsLazy() {
         boolean lazy = applicationContext.getBeanFactory()
-                .getBeanDefinition("mockAImmutableMapper")
-                .isLazyInit();
-        assertTrue(lazy, "mockAImmutableMapper should stay lazy when eagerTypeMapRegistration is false");
+                .getBeanDefinition("orderViewMapper").isLazyInit();
+        assertTrue(lazy, "orderViewMapper should stay lazy when eagerTypeMapRegistration is false");
     }
 }

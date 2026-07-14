@@ -1,7 +1,7 @@
 package by.nhorushko.crudgenerictest.eagerinit;
 
-import by.nhorushko.crudgenerictest.domain.dto.MockAImmutableDto;
-import by.nhorushko.crudgenerictest.domain.entity.MockAEntity;
+import by.nhorushko.crudgenerictest.domain.dto.OrderView;
+import by.nhorushko.crudgenerictest.domain.entity.OrderEntity;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,20 +27,18 @@ class EagerTypeMapRegistrationLazyInitDefaultTest {
 
     @Test
     void modelMapperMap_immutableDto_succeedsUnderLazyInitWithDefaults() {
-        MockAEntity entity = new MockAEntity(42L, "alice", "desc");
-
-        MockAImmutableDto dto = modelMapper.map(entity, MockAImmutableDto.class);
-
+        OrderEntity entity = new OrderEntity();
+        entity.setId(42L);
+        entity.setName("alice");
+        OrderView dto = modelMapper.map(entity, OrderView.class);
         assertEquals(Long.valueOf(42L), dto.getId());
         assertEquals("alice", dto.getName());
     }
 
     @Test
-    void mockAImmutableMapper_beanDefinitionIsEager() {
-        // The post-processor should have flipped this mapper's BeanDefinition out of lazy.
+    void orderViewMapper_beanDefinitionIsEager() {
         boolean lazy = applicationContext.getBeanFactory()
-                .getBeanDefinition("mockAImmutableMapper")
-                .isLazyInit();
-        assertFalse(lazy, "mockAImmutableMapper should be eager because eagerTypeMapRegistration defaults to true");
+                .getBeanDefinition("orderViewMapper").isLazyInit();
+        assertFalse(lazy, "orderViewMapper should be eager because eagerTypeMapRegistration defaults to true");
     }
 }

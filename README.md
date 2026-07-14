@@ -13,8 +13,8 @@ The Generic CRUD Framework simplifies the development of Spring Boot application
 
 ### Prerequisites
 
-* JDK 8+
-* Spring Boot 2.x
+* JDK 17+
+* Spring Boot 3.x
 * ModelMapper
 
 ### Installation via Maven
@@ -57,50 +57,48 @@ public class MyApplication {
 
 ### Step 2: Define Your Entities
 
-Entities should extend AbstractEntity<?>, where ? is the type of your identifier (e.g., Long).
+Entities implement AbstractEntity<?> (from `by.nhorushko.crudgeneric.flex.model`), where ? is the type of your identifier (e.g., Long).
 
 ```java
 @Entity
-public class MyEntity extends AbstractEntity<Long> {
+public class MyEntity implements AbstractEntity<Long> {
     // Entity definition
 }
 ```
 
 ### Step 3: Create DTOs
 
-Define your DTOs for create, read, and update operations. Create and Update DTOs should extend AbsCreateDto and AbstractDto<?> respectively, while Read DTO can directly extend AbstractDto<?>.
+Define your DTOs for create, read, and update operations. Create DTOs implement AbsCreateDto, update DTOs implement AbsUpdateDto<?>, read DTOs implement AbstractDto<?> (all from `by.nhorushko.crudgeneric.flex.model`).
 
 ```java
-public class MyCreateDto extends AbsCreateDto {
+public class MyCreateDto implements AbsCreateDto {
     // Fields specific to creation
 }
 
-public class MyReadDto extends AbstractDto<Long> {
+public class MyReadDto implements AbstractDto<Long> {
     // Fields for reading
 }
 
-public class MyUpdateDto extends AbstractDto<Long> {
+public class MyUpdateDto implements AbsUpdateDto<Long> {
     // Fields for updating
 }
 ```
 
 ### Step 4: Implement Mapping Configurations
-Extend AbsFlexMapConfig in your configuration to set up mappings. Override abstract methods to return concrete mapper instances.
+Extend AbsFlexMapConfigDefault in your configuration to set up mappings. Override createReadDtoFromEntity to construct the read DTO; override the mapSpecificFields* hooks only when a mapping needs custom logic.
 
 ```java
-@Configuration
-public class MyMappingConfig extends AbsFlexMapConfig<MyCreateDto, MyUpdateDto, MyReadDto, MyEntity> {
+@Component
+public class MyMappingConfig extends AbsFlexMapConfigDefault<MyCreateDto, MyUpdateDto, MyReadDto, MyEntity> {
 
-    public MyMappingConfig(AbsDtoModelMapper mapper) {
+    public MyMappingConfig(AbsModelMapper mapper) {
         super(mapper, MyCreateDto.class, MyUpdateDto.class, MyReadDto.class, MyEntity.class);
     }
 
     @Override
-    protected AbsMapBaseDtoToEntity<MyReadDto, MyEntity> mapperReadDtoToEntity(AbsDtoModelMapper mapper, Class<MyReadDto> readDtoClass, Class<MyEntity> entityClass) {
-        // Implementation of mapping from MyReadDto to MyEntity
+    protected MyReadDto createReadDtoFromEntity(AbsModelMapper mapper, MyEntity entity) {
+        return new MyReadDto(entity.getId(), entity.getName());
     }
-
-    // Implement other mappings similarly
 }
 ```
 ### Step 5: Create Services
@@ -124,3 +122,44 @@ public class MyEntityController extends AbsFlexControllerCRUD<Long, MyReadDto, M
 }
 
 ```
+
+## Migration to 5.0 (flex-only)
+
+Version 5.0 removes the legacy v1 (`by.nhorushko.crudgeneric.*` root packages) and v2
+(`by.nhorushko.crudgeneric.v2.*`) stacks. Only `by.nhorushko.crudgeneric.flex.*` remains.
+
+### Moved classes (import rename only — behaviour unchanged)
+
+| 4.x import | 5.0 import |
+|---|---|
+| `by.nhorushko.crudgeneric.v2.domain.AbstractDto` | `by.nhorushko.crudgeneric.flex.model.AbstractDto` |
+| `by.nhorushko.crudgeneric.v2.domain.AbstractEntity` | `by.nhorushko.crudgeneric.flex.model.AbstractEntity` |
+| `by.nhorushko.crudgeneric.v2.domain.IdEntity` | `by.nhorushko.crudgeneric.flex.model.IdEntity` |
+| `by.nhorushko.crudgeneric.domain.SettingsVoid` | `by.nhorushko.crudgeneric.flex.model.SettingsVoid` |
+| `by.nhorushko.crudgeneric.domain.SettingsTranslateable` | `by.nhorushko.crudgeneric.flex.model.SettingsTranslateable` |
+| `by.nhorushko.crudgeneric.exception.AppNotFoundException` | `by.nhorushko.crudgeneric.flex.exception.AppNotFoundException` |
+| `by.nhorushko.crudgeneric.exception.AuthenticationException` | `by.nhorushko.crudgeneric.flex.exception.AuthenticationException` |
+| `by.nhorushko.crudgeneric.util.FieldCopyUtil` | `by.nhorushko.crudgeneric.flex.util.FieldCopyUtil` |
+| `by.nhorushko.crudgeneric.util.PageableUtils` | `by.nhorushko.crudgeneric.flex.util.PageableUtils` |
+| `by.nhorushko.crudgeneric.v2.pageable.PageFilterRequest` | `by.nhorushko.crudgeneric.flex.pageable.PageFilterRequest` |
+| `by.nhorushko.crudgeneric.v2.pageable.AbsFilterSpecification` | `by.nhorushko.crudgeneric.flex.pageable.AbsFilterSpecification` |
+| `by.nhorushko.crudgeneric.v2.pageable.FilterGroupBuilder` | `by.nhorushko.crudgeneric.flex.pageable.FilterGroupBuilder` |
+| `by.nhorushko.crudgeneric.v2.pageable.AbsFlexPagingAndSortingService` | `by.nhorushko.crudgeneric.flex.pageable.AbsFlexPagingAndSortingService` |
+| `by.nhorushko.crudgeneric.v2.controller.BasePageRequest` | `by.nhorushko.crudgeneric.flex.pageable.BasePageRequest` |
+
+### Removed classes and their flex replacements
+
+| Removed (v1/v2) | Replace with |
+|---|---|
+| `ImmutableGenericService`, `CrudGenericService`, `CrudAdditionalGenericService`, `CrudExpandGenericService`, `RudGenericService`, `PartialDtoGenericService`, `v2.AbsServiceR/RUD/CRUD` | `AbsFlexServiceR` / `AbsFlexServiceRUD` / `AbsFlexServiceCRUD` |
+| `v2.AbsServiceExtCRUD` | `AbsFlexServiceExtCRUD` |
+| `ImmutableDtoAbstractMapper`, `AbstractMapper`, `v2.AbsMapperDto/AbsMapperEntityDto/AbsMapperEntityExtDto/AbsMapperBase` | `AbsFlexMapConfigDefault` (one config per entity registers create/update/read maps) |
+| v1 `*RestController`, `v2.AbsControllerR/RU/RUD/CRUD/ExtCRUD` | `AbsFlexControllerR` / `AbsFlexControllerRU` / `AbsFlexControllerRUD` / `AbsFlexControllerCRUD` / `AbsFlexControllerExtCRUD` |
+| `v2.pageable.AbsPagingAndSortingService` (deprecated) | `AbsFlexPagingAndSortingService` (constructor takes the repository + filter specs; implement `toDto` and `buildSpecification`) |
+| `PagingAndSortingImmutableGenericService`, `PageableGenericRestController` | `AbsFlexPagingAndSortingService` + your own controller endpoint building a `PageFilterRequest` |
+| `SpecificationUtils` | Removed with no direct replacement — compose `org.springframework.data.jpa.domain.Specification` instances directly, or use `AbsFilterSpecification` + `PageFilterRequest` for filter-driven paging |
+
+Notes:
+- Flex `save()` is an upsert (`persistOrMerge`): id `null`/`0` or an absent assigned id inserts; an existing id updates.
+- `delete(missingId)` is a silent no-op (idempotent).
+- The sentinel id `0` is treated as "new" and normalised to `null` on every save path.

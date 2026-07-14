@@ -2,8 +2,8 @@ package by.nhorushko.crudgeneric.flex;
 
 import by.nhorushko.crudgeneric.flex.config.AbsGenericCrudConfiguration;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapDtoToEntity;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import org.junit.Before;
 import org.junit.Test;
 import org.modelmapper.ModelMapper;

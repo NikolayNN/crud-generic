@@ -3,7 +3,7 @@ package by.nhorushko.crudgeneric.flex.mapper;
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBaseDtoToEntity;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 
 /**
  * Abstract mapper for converting create DTOs into new entity instances.

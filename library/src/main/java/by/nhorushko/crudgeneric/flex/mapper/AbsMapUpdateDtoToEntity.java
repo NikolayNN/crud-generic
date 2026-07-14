@@ -2,8 +2,8 @@ package by.nhorushko.crudgeneric.flex.mapper;
 
 import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapDtoToEntity;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 
 /**
  * Abstract class for mapping update Data Transfer Objects (DTOs) into existing entity instances.

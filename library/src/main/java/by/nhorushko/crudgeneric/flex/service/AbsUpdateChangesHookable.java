@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 
 /**
  * Interface that defines hooks for capturing state changes before and after updating an entity.

@@ -1,7 +1,5 @@
 package by.nhorushko.crudgeneric.flex.model;
 
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-
 /**
  * Interface for marking DTOs (Data Transfer Objects) that are specifically intended for updating entities.
  * <p>

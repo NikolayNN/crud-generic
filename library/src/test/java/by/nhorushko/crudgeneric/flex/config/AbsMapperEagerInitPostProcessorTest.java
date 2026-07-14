@@ -4,8 +4,6 @@ import by.nhorushko.crudgeneric.flex.AbsModelMapper;
 import by.nhorushko.crudgeneric.flex.mapper.composite.AbsFlexMapConfigAbstract;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.mapper.core.RegisterableMapper;
-import by.nhorushko.crudgeneric.mapper.AbstractMapper;
-import by.nhorushko.crudgeneric.v2.mapper.AbsMapperBase;
 import org.junit.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -20,7 +18,7 @@ public class AbsMapperEagerInitPostProcessorTest {
     public void postProcessBeanFactory_flagOn_setsLazyInitFalseForMapperSubtype() {
         DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
 
-        BeanDefinition mapperBd = new RootBeanDefinition(StubMapperBaseBean.class);
+        BeanDefinition mapperBd = new RootBeanDefinition(StubAbsMapBasicBean.class);
         mapperBd.setLazyInit(true);
         bf.registerBeanDefinition("stubMapper", mapperBd);
 
@@ -33,39 +31,13 @@ public class AbsMapperEagerInitPostProcessorTest {
     public void postProcessBeanFactory_flagOn_alreadyEagerMapperStaysEager() {
         DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
 
-        BeanDefinition mapperBd = new RootBeanDefinition(StubMapperBaseBean.class);
+        BeanDefinition mapperBd = new RootBeanDefinition(StubAbsMapBasicBean.class);
         mapperBd.setLazyInit(false);
         bf.registerBeanDefinition("eagerMapper", mapperBd);
 
         new AbsMapperEagerInitPostProcessor().postProcessBeanFactory(bf);
 
         assertFalse(bf.getBeanDefinition("eagerMapper").isLazyInit());
-    }
-
-    @Test
-    public void postProcessBeanFactory_flagOn_alsoFlipsAbsMapBasicSubtypes() {
-        DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
-
-        BeanDefinition mapperBd = new RootBeanDefinition(StubAbsMapBasicBean.class);
-        mapperBd.setLazyInit(true);
-        bf.registerBeanDefinition("absMapBasicBean", mapperBd);
-
-        new AbsMapperEagerInitPostProcessor().postProcessBeanFactory(bf);
-
-        assertFalse(bf.getBeanDefinition("absMapBasicBean").isLazyInit());
-    }
-
-    @Test
-    public void postProcessBeanFactory_flagOn_alsoFlipsAbstractMapperSubtypes() {
-        DefaultListableBeanFactory bf = newFactoryWithCustomizer(true);
-
-        BeanDefinition mapperBd = new RootBeanDefinition(StubAbstractMapperBean.class);
-        mapperBd.setLazyInit(true);
-        bf.registerBeanDefinition("legacyMapper", mapperBd);
-
-        new AbsMapperEagerInitPostProcessor().postProcessBeanFactory(bf);
-
-        assertFalse(bf.getBeanDefinition("legacyMapper").isLazyInit());
     }
 
     @Test
@@ -111,7 +83,7 @@ public class AbsMapperEagerInitPostProcessorTest {
     public void postProcessBeanFactory_flagOff_leavesMapperLazyAlone() {
         DefaultListableBeanFactory bf = newFactoryWithCustomizer(false);
 
-        BeanDefinition mapperBd = new RootBeanDefinition(StubMapperBaseBean.class);
+        BeanDefinition mapperBd = new RootBeanDefinition(StubAbsMapBasicBean.class);
         mapperBd.setLazyInit(true);
         bf.registerBeanDefinition("stubMapper", mapperBd);
 
@@ -124,7 +96,7 @@ public class AbsMapperEagerInitPostProcessorTest {
     public void postProcessBeanFactory_noCustomizerBean_defaultsToFlagOn() {
         DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
 
-        BeanDefinition mapperBd = new RootBeanDefinition(StubMapperBaseBean.class);
+        BeanDefinition mapperBd = new RootBeanDefinition(StubAbsMapBasicBean.class);
         mapperBd.setLazyInit(true);
         bf.registerBeanDefinition("stubMapper", mapperBd);
 
@@ -145,12 +117,6 @@ public class AbsMapperEagerInitPostProcessorTest {
 
     // --- stubs --- //
 
-    public static class StubMapperBaseBean extends AbsMapperBase<Object, Object> {
-        public StubMapperBaseBean() {
-            super(null, Object.class, Object.class);
-        }
-    }
-
     public static class StubAbsMapBasicBean extends AbsMapBasic<Object, Object> {
         // null AbsModelMapper is intentional and safe: BDRPP only inspects bean
         // definitions via getType(beanName, false) and never instantiates the bean,
@@ -158,15 +124,6 @@ public class AbsMapperEagerInitPostProcessorTest {
         // register()) never runs. Do not change this without rethinking the test design.
         public StubAbsMapBasicBean() {
             super(null, Object.class, Object.class);
-        }
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static class StubAbstractMapperBean extends AbstractMapper {
-        public StubAbstractMapperBean() {
-            super(by.nhorushko.crudgeneric.domain.AbstractEntity.class,
-                  by.nhorushko.crudgeneric.domain.AbstractDto.class,
-                  null);
         }
     }
 

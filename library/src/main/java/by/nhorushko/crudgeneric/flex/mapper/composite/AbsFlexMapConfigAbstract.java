@@ -5,8 +5,8 @@ import by.nhorushko.crudgeneric.flex.mapper.AbsMapEntityToDto;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBaseDtoToEntity;
 import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapBasic;
 import by.nhorushko.crudgeneric.flex.model.AbsBaseDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 
 /**
  * Base configuration class for establishing mappings between various types of Data Transfer Objects (DTOs) and entities.

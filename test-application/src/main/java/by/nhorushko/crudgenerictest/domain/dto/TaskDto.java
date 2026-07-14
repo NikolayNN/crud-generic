@@ -1,6 +1,6 @@
 package by.nhorushko.crudgenerictest.domain.dto;
 
-import by.nhorushko.crudgeneric.v2.domain.AbstractDto;
+import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

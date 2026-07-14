@@ -1,6 +1,6 @@
 package by.nhorushko.crudgenerictest.domain.entity;
 
-import by.nhorushko.crudgeneric.v2.domain.AbstractEntity;
+import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

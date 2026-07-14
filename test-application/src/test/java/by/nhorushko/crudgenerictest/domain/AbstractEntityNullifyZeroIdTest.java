@@ -1,6 +1,6 @@
 package by.nhorushko.crudgenerictest.domain;
 
-import by.nhorushko.crudgenerictest.domain.entity.TrackerEntity;
+import by.nhorushko.crudgenerictest.domain.entity.RegionEntity;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,7 +10,7 @@ class AbstractEntityNullifyZeroIdTest {
 
     @Test
     void zeroIdShouldBecomeNull() {
-        TrackerEntity entity = TrackerEntity.builder().id(0L).build();
+        RegionEntity entity = RegionEntity.builder().id(0L).build();
 
         entity.nullifyZeroId();
 
@@ -19,7 +19,7 @@ class AbstractEntityNullifyZeroIdTest {
 
     @Test
     void realIdShouldRemainUnchanged() {
-        TrackerEntity entity = TrackerEntity.builder().id(5L).build();
+        RegionEntity entity = RegionEntity.builder().id(5L).build();
 
         entity.nullifyZeroId();
 
@@ -28,7 +28,7 @@ class AbstractEntityNullifyZeroIdTest {
 
     @Test
     void nullIdShouldRemainNull() {
-        TrackerEntity entity = TrackerEntity.builder().id(null).build();
+        RegionEntity entity = RegionEntity.builder().id(null).build();
 
         entity.nullifyZeroId();
 

@@ -7,7 +7,7 @@
     <groupId>by.nhorushko</groupId>
     <artifactId>crud-abstract-generic</artifactId>
     <name>library</name>
-    <version>4.0-SNAPSHOT</version>
+    <version>5.0-SNAPSHOT</version>
 
     <properties>
         <java.version>17</java.version>
@@ -43,12 +43,6 @@
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
             <version>3.2.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.java-json-tools</groupId>
-            <artifactId>json-patch</artifactId>
-            <version>1.13</version>
         </dependency>
 
         <dependency>

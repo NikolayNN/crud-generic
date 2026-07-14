@@ -1,6 +1,6 @@
 package by.nhorushko.crudgenerictest.service;
 
-import by.nhorushko.crudgeneric.exception.AppNotFoundException;
+import by.nhorushko.crudgeneric.flex.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.OrderDto;
 import by.nhorushko.crudgenerictest.domain.dto.OrderUpdateDto;
 import by.nhorushko.crudgenerictest.domain.entity.OrderEntity;
