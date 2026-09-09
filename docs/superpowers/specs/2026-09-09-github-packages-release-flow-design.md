@@ -167,14 +167,15 @@ weight; removing them is proposed to the owner, not done unilaterally.
 1. `refactor: absorb filter-specifications-lib sources`
 2. `build: make root pom the single source of version`
 3. `build: publish to GitHub Packages instead of JitPack`
-4. `ci: verify on PR, release from master`
-5. `chore: repo hygiene and agent guardrails`
+4. `chore: repo hygiene and agent guardrails` — before CI, because the workflow calls `./mvnw`
+5. `ci: verify on PR, release from master`
 6. `docs: README and CHANGELOG for the new release flow`
 
 ## Verification
 
-- `mvn -B verify` — 74 tests across 23 classes today; after failsafe and the absorption it must
-  reach roughly 105 across 33 classes. Exact counts recorded before and after.
+- `mvn -B verify` — measured baseline is 72 tests across 23 classes (library 64/18,
+  test-application 8/5). After failsafe and the absorption it must reach 115 across 33 classes:
+  +31 integration tests, +12 from the absorbed `FilterSpecificationUtilsTest`.
 - `versions:set -DnewVersion=14.1` at the root must update the root pom, `library`, and the
   library reference in `test-application`; then reverted. This is precisely the case that failed
   in the experiment above.
