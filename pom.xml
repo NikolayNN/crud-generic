@@ -23,6 +23,16 @@
         <spring-boot.version>3.5.16</spring-boot.version>
     </properties>
 
+    <distributionManagement>
+        <!-- Server id `github` must match the <server> entry in ~/.m2/settings.xml
+             (CI generates it via actions/setup-java). See README, "Публикация". -->
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/NikolayNN/crud-generic</url>
+        </repository>
+    </distributionManagement>
+
     <dependencyManagement>
         <dependencies>
             <!-- Replaces spring-boot-starter-parent for test-application: the module needs the
