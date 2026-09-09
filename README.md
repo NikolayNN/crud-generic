@@ -47,11 +47,13 @@ for reading public packages**, so a token is needed once per machine and per CI 
     </repository>
 </repositories>
 
-<dependency>
-    <groupId>by.nhorushko</groupId>
-    <artifactId>crud-abstract-generic</artifactId>
-    <version>14.0</version>
-</dependency>
+<dependencies>
+    <dependency>
+        <groupId>by.nhorushko</groupId>
+        <artifactId>crud-abstract-generic</artifactId>
+        <version>14.0</version>
+    </dependency>
+</dependencies>
 ```
 
 The `<id>` in `settings.xml` and in `<repositories>` must match.
@@ -244,6 +246,17 @@ public class RtRoutePageableService
 
 Теги руками не ставятся: тег — это результат релиза, а не его вход. Версию перед релизом
 поднимать не нужно.
+
+### Восстановление после неудачного релиза
+
+Простой перезапуск workflow сам по себе не поможет: GitHub Packages отказывает 409 на
+повторную публикацию уже опубликованной версии, поэтому нужно сначала понять, в каком из
+двух промежуточных состояний остановился релиз.
+
+- **Артефакт опубликован, тега нет** — удалить версию пакета на странице packages
+  репозитория, затем перезапустить workflow.
+- **Артефакт и тег на месте, GitHub Release не создан** — создать Release вручную из
+  соответствующего раздела `CHANGELOG.md`.
 
 ## CI (GitHub Actions)
 
