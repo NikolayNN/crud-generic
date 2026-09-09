@@ -6,6 +6,10 @@ import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceCRUD;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,7 +53,7 @@ public abstract class AbsFlexControllerCRUD<
      * <p>
      * This method invokes pre-save and post-save hooks for additional processing around the
      * creation operation. It then calls the service layer to create the entity based on the
-     * provided DTO. A response with the created entity view and HTTP status 201 Created is
+     * provided DTO. A response with the created entity view and HTTP status 200 OK is
      * returned upon successful creation.
      * </p>
      *
@@ -59,6 +63,12 @@ public abstract class AbsFlexControllerCRUD<
      * @return A ResponseEntity containing the created entity view.
      */
     @PostMapping
+    @Operation(summary = "Create",
+            description = "Creates a new entity and returns its view.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Entity created"),
+            @ApiResponse(responseCode = "400", description = "Request body is invalid", content = @Content)
+    })
     public ResponseEntity<DTO_VIEW> save(@Valid @RequestBody CREATE_DTO obj,
                                          SETTINGS settings,
                                          HttpServletRequest request) {

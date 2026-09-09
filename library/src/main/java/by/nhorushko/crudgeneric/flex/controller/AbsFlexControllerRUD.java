@@ -5,6 +5,11 @@ import by.nhorushko.crudgeneric.flex.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,7 +59,15 @@ public abstract class AbsFlexControllerRUD<
      * @return A ResponseEntity representing an empty body with HTTP status 204 No Content.
      */
     @DeleteMapping("{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") ID id, HttpServletRequest request) {
+    @Operation(summary = "Delete by id",
+            description = "Deletes the entity with the given id. The operation is idempotent: "
+                    + "deleting an entity that does not exist also returns 204.")
+    @ApiResponses(
+            @ApiResponse(responseCode = "204", description = "Entity deleted, or did not exist", content = @Content)
+    )
+    public ResponseEntity<Void> delete(@Parameter(description = "Identifier of the entity to delete")
+                                       @PathVariable("id") ID id,
+                                       HttpServletRequest request) {
         beforeDeleteHook(id, request);
         service.delete(id);
         afterDeleteHook(id, request);

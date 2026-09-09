@@ -5,6 +5,11 @@ import by.nhorushko.crudgeneric.flex.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceRUD;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -58,7 +63,18 @@ public abstract class AbsFlexControllerRU<
      * @throws IllegalArgumentException if the provided ID does not match the ID in the DTO
      */
     @PutMapping("{id}")
-    public ResponseEntity<READ_DTO_VIEW> update(@PathVariable("id") ID id,
+    @Operation(summary = "Update",
+            description = "Updates an existing entity. The id in the path must match the id in the request body.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Entity updated"),
+            @ApiResponse(responseCode = "400",
+                    description = "Request body is invalid, or the id in the path does not match the id in the body",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Entity with the given id does not exist",
+                    content = @Content)
+    })
+    public ResponseEntity<READ_DTO_VIEW> update(@Parameter(description = "Identifier of the entity to update")
+                                                @PathVariable("id") ID id,
                                                 SETTINGS settings,
                                                 @Valid @RequestBody UPDATE_DTO obj,
                                                 HttpServletRequest request) {

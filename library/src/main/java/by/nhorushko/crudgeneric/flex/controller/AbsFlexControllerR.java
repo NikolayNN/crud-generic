@@ -5,6 +5,10 @@ import by.nhorushko.crudgeneric.flex.exception.AuthenticationException;
 import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceR;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,8 +56,15 @@ public abstract class AbsFlexControllerR<ID, DTO extends AbstractDto<ID>, DTO_VI
      * @return a {@link ResponseEntity} wrapping the view-specific DTO
      */
     @GetMapping("{id}")
-    @Operation(summary = "Get by id")
-    public ResponseEntity<DTO_VIEW> getById(@PathVariable("id") ID id,
+    @Operation(summary = "Get by id",
+            description = "Returns a single entity by its identifier.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Entity found"),
+            @ApiResponse(responseCode = "404", description = "Entity with the given id does not exist",
+                    content = @Content)
+    })
+    public ResponseEntity<DTO_VIEW> getById(@Parameter(description = "Identifier of the entity")
+                                            @PathVariable("id") ID id,
                                             SETTINGS settings,
                                             HttpServletRequest request) {
         beforeGetByIdHook(id, request);

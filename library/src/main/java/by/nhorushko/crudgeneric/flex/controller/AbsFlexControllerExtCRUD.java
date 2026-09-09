@@ -6,6 +6,11 @@ import by.nhorushko.crudgeneric.flex.service.AbsFlexServiceExtCRUD;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,6 +62,11 @@ public abstract class AbsFlexControllerExtCRUD<
      * another entity identified by the {@code relationId}. It invokes before and after save
      * hooks for custom logic and validation related to the relationship context.
      * </p>
+     * <p>
+     * This method carries no request mapping: the subclass declares the mapping itself, usually by
+     * overriding this method. Java does not inherit annotations on an overridden method, so a subclass
+     * that overrides {@code save} must repeat the OpenAPI annotations below (or declare its own).
+     * </p>
      *
      * @param relationId The ID of the related entity to which the new entity will be associated.
      * @param body       The DTO containing the data for the new entity.
@@ -64,7 +74,14 @@ public abstract class AbsFlexControllerExtCRUD<
      * @param request    The HttpServletRequest providing request context.
      * @return A ResponseEntity containing the created entity's view.
      */
-    public ResponseEntity<READ_DTO_VIEW> save(Ext_ID relationId,
+    @Operation(summary = "Create with relation",
+            description = "Creates a new entity linked to the related entity identified by the relation id.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Entity created"),
+            @ApiResponse(responseCode = "400", description = "Request body is invalid", content = @Content)
+    })
+    public ResponseEntity<READ_DTO_VIEW> save(@Parameter(description = "Identifier of the related entity")
+                                              Ext_ID relationId,
                                               CREATE_DTO body,
                                               SETTINGS settings,
                                               HttpServletRequest request) {
