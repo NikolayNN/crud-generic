@@ -1,0 +1,15 @@
+# Нормализация концов строк: в репозитории всегда LF, в рабочей копии тоже LF
+# (кроме Windows-скриптов). Перекрывает глобальный core.autocrlf=true.
+* text=auto eol=lf
+
+# Windows-скрипты должны оставаться CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Бинарники
+*.jar binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary
