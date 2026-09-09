@@ -1,0 +1,119 @@
+# CI библиотеки. Схема: README «Релиз и версии» и раздел «Docker image & release flow»
+# в ~/.claude/CLAUDE.md.
+#   PR в develop/master     -> только тесты (verify)
+#   push в develop          -> только тесты, ничего не публикуется
+#   push в master (= релиз) -> guard «версия ещё не выпущена», deploy в GitHub Packages,
+#                              тег v<version> и GitHub Release из раздела CHANGELOG
+# Версия берётся из pom.xml (единственный источник); теги vX.Y ставит только этот workflow.
+# Дополнительных секретов не нужно: публикация идёт под GITHUB_TOKEN.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, master]
+  push:
+    branches: [develop, master]
+  workflow_dispatch:
+
+# Серия push в develop схлопывается до последнего запуска; релизы на master не отменяем.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  verify:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Project version
+        id: version
+        run: echo "version=$(./mvnw -q help:evaluate -Dexpression=project.version -DforceStdout)" >> "$GITHUB_OUTPUT"
+
+      - name: Release guard, tag must not exist (master only)
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        run: |
+          v='${{ steps.version.outputs.version }}'
+          if git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then
+            echo "::error::Version $v is already released (tag v$v exists). Bump the version on develop first (chore: start ...)."
+            exit 1
+          fi
+
+      - name: Verify
+        run: ./mvnw -B verify
+
+  publish:
+    name: Publish and tag
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # тег vX.Y и GitHub Release
+      packages: write   # публикация в GitHub Packages
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          # Генерирует ~/.m2/settings.xml с <server><id>github</id>, id совпадает
+          # с distributionManagement в корневом pom.xml.
+          server-id: github
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_TOKEN
+
+      - name: Deploy to GitHub Packages
+        env:
+          MAVEN_USERNAME: ${{ github.actor }}
+          MAVEN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Тесты уже прошли в job verify, но deploy обязан собрать jar заново.
+        run: ./mvnw -B deploy -DskipTests
+
+      - name: Tag v<version>
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release $VERSION"
+          git push origin "v$VERSION"
+
+      - name: GitHub Release from CHANGELOG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Раздел "## <version>" из CHANGELOG.md до следующего заголовка "## "
+          awk -v v="$VERSION" '
+            $0 == "## " v { on = 1; next }
+            on && /^## /    { exit }
+            on              { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::Section '## $VERSION' not found in CHANGELOG.md"
+            echo "См. CHANGELOG.md" > release-notes.md
+          fi
+          gh release create "v$VERSION" --title "$VERSION" --notes-file release-notes.md
+
+      - name: Summary
+        run: |
+          {
+            echo "### by.nhorushko:crud-abstract-generic:$VERSION"
+            echo "- commit: ${GITHUB_SHA::7}"
+            echo "- tag: v$VERSION"
+            echo "- https://github.com/${GITHUB_REPOSITORY}/packages"
+          } >> "$GITHUB_STEP_SUMMARY"
