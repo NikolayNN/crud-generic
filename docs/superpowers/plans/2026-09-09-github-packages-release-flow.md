@@ -104,17 +104,41 @@ Do not edit the copied files — not the formatting, not the imports, not the li
 
 - [ ] **Step 6: Add the one dependency the absorbed code needs**
 
-`FilterOperation` uses `com.fasterxml.jackson.annotation.JsonValue`. Add to `library/pom.xml`, in the same style as its neighbours (explicit version), next to the `commons-lang3` dependency:
+Two dependencies must be added to `library/pom.xml`, in the same style as their neighbours
+(explicit version), next to the `commons-lang3` dependency:
 
 ```xml
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.21.4</version>
+            <version>2.21</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>3.1.0</version>
+            <scope>provided</scope>
         </dependency>
 ```
 
-Everything else the absorbed code imports — `jakarta.persistence.criteria.*`, `org.apache.commons.lang3.*`, `org.springframework.data.*`, `org.springframework.beans.factory.annotation.Autowired`, `org.springframework.stereotype.Service`, JUnit 4 — already resolves through `library`'s existing dependencies.
+`jackson-annotations` is needed by `@JsonValue` on the absorbed `FilterOperation` enum. Note the
+version is `2.21`, not `2.21.4`: the Jackson BOM's patch version does not apply to this module, and
+`2.21` is the newest release that exists.
+
+`jakarta.persistence-api` is the less obvious one. Three pre-existing files — `AbsModelMapper`,
+`AbsGenericCrudConfiguration`, `AbsFlexServiceCRUD` — plus the absorbed `FilterSpecifications` import
+`jakarta.persistence.*`, but nothing in `library` ever declared it. It arrived transitively through the
+JitPack artifact's own pom, so removing that dependency in Step 3 takes it away: `spring-data-jpa`
+3.5.13 names `jakarta.persistence-api` only inside an `annotationProcessorPaths` block, never as a
+dependency. Version `3.1.0` is exactly what resolves under Spring Boot 3.5.16 today (via
+`hibernate-core`) and what the old transitive path supplied, so this changes no behaviour. Scope
+`provided` matches how `library` already treats `jakarta.servlet-api` and `jakarta.validation-api`;
+consumers get the API from their own JPA starter.
+
+Everything else the absorbed code imports — `org.apache.commons.lang3.*`, `org.springframework.data.*`,
+`org.springframework.beans.factory.annotation.Autowired`, `org.springframework.stereotype.Service`,
+JUnit 4 — does resolve through `library`'s existing dependencies.
 
 - [ ] **Step 7: Run the library tests**
 
