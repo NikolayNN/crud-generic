@@ -5,8 +5,6 @@
 
 ## Не выпущено
 
-## 14.0
-
 ### Публикация
 - Библиотека переехала с JitPack в GitHub Packages. Новые координаты:
   `by.nhorushko:crud-abstract-generic` вместо `com.github.NikolayNN:crud-generic`.
