@@ -4,18 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>by.nhorushko</groupId>
+    <parent>
+        <groupId>by.nhorushko</groupId>
+        <artifactId>crud-abstract-generic-parent</artifactId>
+        <version>14.0</version>
+    </parent>
+
     <artifactId>crud-abstract-generic</artifactId>
     <name>library</name>
-    <version>5.0-SNAPSHOT</version>
-
-    <properties>
-        <maven.compiler.release>25</maven.compiler.release>
-        <lombok.version>1.18.48</lombok.version>
-        <github.global.server>github</github.global.server>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    </properties>
 
     <distributionManagement>
         <repository>
@@ -111,26 +107,12 @@
 
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.16.0</version>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-g</arg>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
-                </configuration>
             </plugin>
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.6.0</version>
             </plugin>
 
             <plugin>
@@ -169,7 +151,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>

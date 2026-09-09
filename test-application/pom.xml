@@ -6,20 +6,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.16</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>by.nhorushko</groupId>
+        <artifactId>crud-abstract-generic-parent</artifactId>
+        <version>14.0</version>
     </parent>
 
-    <groupId>by.nhorushko</groupId>
     <artifactId>crud-abstract-generic-test</artifactId>
     <name>test-application</name>
-    <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <java.version>25</java.version>
-        <lombok.version>1.18.48</lombok.version>
+        <!-- Demo application, not a published artifact. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
@@ -36,7 +33,7 @@
         <dependency>
             <groupId>by.nhorushko</groupId>
             <artifactId>crud-abstract-generic</artifactId>
-            <version>5.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -61,18 +58,19 @@
 
     <build>
         <plugins>
+            <!-- 9 *IT classes (31 tests) exist here but surefire only matches *Test/Test*/*Tests,
+                 so before this they never executed and `mvn verify` was green without them. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
