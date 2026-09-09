@@ -3,6 +3,12 @@
 # Не даёт агенту публиковать артефакты и ставить версионные теги: публикует CI
 # (.github/workflows/ci.yml), релиз запускает человек через /aurora-release.
 #
+# Границы регулярок специально шире буквального написания команды: ловят полную форму
+# `groupId:artifactId:version:deploy`, `git.exe`/`/usr/bin/git` и `--force-with-lease`/
+# `--force-if-includes` наравне с голым `--force`/`-f`. Это не экзотика, а самые вероятные
+# варианты, которыми агент обойдёт узкую проверку просто выбрав другую форму команды, а не
+# намеренно её обходя.
+#
 # Вход: JSON от Claude Code на stdin, команда лежит в .tool_input.command.
 # Выход: exit 2 + текст в stderr — вызов заблокирован, текст показывается модели;
 #        exit 0 — команда разрешена.
@@ -13,12 +19,16 @@ input=$(cat)
 has() { printf '%s' "$input" | grep -Eq "$1"; }
 
 blocked=""
-if has '(mvn|mvnw)[^"]*[[:space:]]deploy([[:space:]]|\\?"|$)'; then
-    blocked="mvn deploy"
-elif has '(^|[^[:alnum:]_./-])git[[:space:]]+tag([[:space:]]|\\?"|$)'; then
-    blocked="git tag"
-elif has '(^|[^[:alnum:]_./-])git[[:space:]]+push[^"]*(--force|-f)([[:space:]]|\\?"|$)'; then
-    blocked="git push --force"
+if has '(mvn|mvnw)[^"]*[[:space:]:]deploy([[:space:]]|\\?"|$)'; then
+    # Фаза `deploy` и полная форма `groupId:artifactId:version:deploy` — отсюда `:` в границе слева.
+    blocked="публикация артефакта"
+elif has '(^|[^[:alnum:]_])git(\.exe)?[[:space:]]+tag([[:space:]]|\\?"|$)'; then
+    # Слева достаточно любого не-буквенно-цифрового символа: так ловятся и `git`, и `/usr/bin/git`,
+    # и `git.exe`. Исключать `/`, `.` и `-` нельзя — именно они и стоят в путях.
+    blocked="создание версионного тега"
+elif has '(^|[^[:alnum:]_])git(\.exe)?[[:space:]]+push[^"]*(--force[[:alnum:]-]*|-f)([[:space:]]|\\?"|$)'; then
+    # `--force[[:alnum:]-]*` покрывает и `--force-with-lease`, и `--force-if-includes`.
+    blocked="принудительный push"
 fi
 
 if [ -n "$blocked" ]; then
