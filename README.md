@@ -18,24 +18,50 @@ The Generic CRUD Framework simplifies the development of Spring Boot application
 * ModelMapper
 
 ### Installation via Maven
-Add the JitPack repository and the framework dependency to your pom.xml:
+
+The library is published to GitHub Packages. **GitHub Packages requires authentication even
+for reading public packages**, so a token is needed once per machine and per CI runner.
+
+1. Create a personal access token with the `read:packages` scope.
+2. Add it to `~/.m2/settings.xml`:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>github-crud-generic</id>
+      <username>YOUR_GITHUB_LOGIN</username>
+      <password>YOUR_TOKEN_WITH_read:packages</password>
+    </server>
+  </servers>
+</settings>
+```
+
+3. Add the repository and the dependency to your `pom.xml`:
 
 ```xml
 <repositories>
     <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
+        <id>github-crud-generic</id>
+        <url>https://maven.pkg.github.com/NikolayNN/crud-generic</url>
     </repository>
 </repositories>
 
 <dependency>
-    <groupId>com.github.NikolayNN</groupId>
-    <artifactId>crud-generic</artifactId>
-    <version>latest.version.here</version>
+    <groupId>by.nhorushko</groupId>
+    <artifactId>crud-abstract-generic</artifactId>
+    <version>14.0</version>
 </dependency>
-
 ```
-Find the latest versions at: https://jitpack.io/#NikolayNN/crud-generic
+
+The `<id>` in `settings.xml` and in `<repositories>` must match.
+
+Released versions are listed at https://github.com/NikolayNN/crud-generic/packages
+
+**Migrating from JitPack (versions up to 13.3.15-jakarta):** the coordinates changed from
+`com.github.NikolayNN:crud-generic` to `by.nhorushko:crud-abstract-generic`, and the
+`jitpack.io` repository is no longer needed. Java imports do not change — including
+`by.nhorushko.filterspecification.*`, whose sources now live in this library.
 
 ## Usage Guide
 
@@ -205,3 +231,29 @@ public class RtRoutePageableService
 - **Sort syntax narrowed**: `asc#field`, `desc#field` or bare `field` (ascending). The legacy
   `+field`/`-field` prefixes are rejected with `FilterValidationException` (in URLs `+` decodes
   to a space). `BasePageRequest`'s default sort changed from `-id` to `desc#id`.
+
+## Релиз и версии
+
+Версия в корневом `pom.xml` — это версия, **которая сейчас разрабатывается**. Релиз её не
+меняет: коммит `chore: release X.Y` закрывает раздел changelog, master fast-forward'ится на
+него, и сразу после этого develop переводится на следующую версию (`chore: start X.Y+1`).
+
+Релиз запускается командой `/aurora-release` из ветки `develop` при чистом дереве. Дальше
+всё делает CI: тесты, публикация `by.nhorushko:crud-abstract-generic:X.Y` в GitHub Packages,
+тег `vX.Y` и GitHub Release из раздела `## X.Y` в `CHANGELOG.md`.
+
+Теги руками не ставятся: тег — это результат релиза, а не его вход. Версию перед релизом
+поднимать не нужно.
+
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml`:
+
+| Событие | Что происходит |
+|---|---|
+| PR в `develop`/`master` | `./mvnw -B verify` |
+| push в `develop` | `./mvnw -B verify`, ничего не публикуется |
+| push в `master` | проверка «тег `vX.Y` ещё не существует», verify, deploy в GitHub Packages, тег `vX.Y`, GitHub Release |
+| ручной запуск (`workflow_dispatch`), даже на `master` | только `./mvnw -B verify`, публикации не бывает |
+
+Секретов заводить не нужно — публикация идёт под `GITHUB_TOKEN`.
