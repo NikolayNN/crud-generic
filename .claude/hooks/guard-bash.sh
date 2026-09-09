@@ -20,10 +20,12 @@ input=$(cat)
 has() { printf '%s' "$input" | grep -Eq "$1"; }
 
 blocked=""
-if has '(mvn|mvnw)[^"]*[[:space:]:]deploy[[:alnum:]-]*([[:space:]]|\\?"|$)'; then
+if has '(mvn|mvnw)[^"]*[[:space:]:]deploy(-file)?([[:space:]]|\\?"|$)'; then
     # Фаза `deploy` и полная форма `groupId:artifactId:version:deploy` — отсюда `:` в границе слева.
-    # `[[:alnum:]-]*` после `deploy` ловит и `deploy-file`/`...:deploy-file` (загрузка произвольного
-    # файла на произвольный URL) — не только сам голый deploy-гол.
+    # `(-file)?` ловит и `deploy-file`/`...:deploy-file` (загрузка произвольного файла на
+    # произвольный URL). Перечисляем ровно эти два гола, а не `[[:alnum:]-]*`: список опасных
+    # написаний тут маленький и известный, а wildcard блокирует и легитимные `-P deployment`,
+    # `-pl deployment-module` — профиль или модуль с таким именем вполне реален.
     blocked="публикация артефакта"
 elif has '(^|[^[:alnum:]_])git(\.exe)?[[:space:]]+tag([[:space:]]|\\?"|$)'; then
     # Слева достаточно любого не-буквенно-цифрового символа: так ловятся и `git`, и `/usr/bin/git`,
