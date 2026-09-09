@@ -4,6 +4,7 @@
 #   push в develop          -> только тесты, ничего не публикуется
 #   push в master (= релиз) -> guard «версия ещё не выпущена», deploy в GitHub Packages,
 #                              тег v<version> и GitHub Release из раздела CHANGELOG
+#   ручной запуск (workflow_dispatch), даже на master -> только тесты, публикации не бывает
 # Версия берётся из pom.xml (единственный источник); теги vX.Y ставит только этот workflow.
 # Дополнительных секретов не нужно: публикация идёт под GITHUB_TOKEN.
 name: CI
@@ -43,13 +44,21 @@ jobs:
         run: echo "version=$(./mvnw -q help:evaluate -Dexpression=project.version -DforceStdout)" >> "$GITHUB_OUTPUT"
 
       - name: Release guard, tag must not exist (master only)
-        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          v='${{ steps.version.outputs.version }}'
-          if git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then
-            echo "::error::Version $v is already released (tag v$v exists). Bump the version on develop first (chore: start ...)."
-            exit 1
-          fi
+          set +e
+          git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1
+          rc=$?
+          set -e
+          case "$rc" in
+            0) echo "::error::Version $VERSION is already released (tag v$VERSION exists). Bump the version on develop first (chore: start ...)."
+               exit 1 ;;
+            2) echo "Tag v$VERSION does not exist yet — clear to release." ;;
+            *) echo "::error::Could not verify whether tag v$VERSION exists (git ls-remote exit $rc). Refusing to release on an unverified guard."
+               exit 1 ;;
+          esac
 
       - name: Verify
         run: ./mvnw -B verify
@@ -57,7 +66,7 @@ jobs:
   publish:
     name: Publish and tag
     needs: verify
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
