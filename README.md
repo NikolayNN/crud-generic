@@ -13,8 +13,8 @@ The Generic CRUD Framework simplifies the development of Spring Boot application
 
 ### Prerequisites
 
-* JDK 17+
-* Spring Boot 3.x
+* JDK 25+
+* Spring Boot 3.5+
 * ModelMapper
 
 ### Installation via Maven
