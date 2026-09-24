@@ -24,7 +24,14 @@
   id из path. Контроллеры библиотеки и bi-dvr его не используют. В комментариях мапперов LocatorServer
   read DTO → entity описан как опасный на 14.x: неявное копирование положило бы `owner` глубоко
   поверх managed `UserEntity` и затёрло `areaM2`.
-- **self-map entity → entity** регистрируется «для клонирования» и никем не используется.
+- **self-map entity → entity** регистрируется «для клонирования»; на HEAD его никто не
+  использует, но в 13.3.15 это механизм Preset-мапперов: `AbsMapDtoToPresetEntity` в
+  `handleAfterMapSpecificFields` находил сохранённую строку через `entityManager.find` и звал
+  `mergeActualAndReceived(actual, received)`, который по умолчанию делал
+  `modelMapper.map(received, actual)` — неявно накладывал свежесмапленную отсоединённую копию на
+  managed-строку вместе с её непустыми дефолтами вроде пустых коллекций. LocatorServer построен
+  на этом: 35 Preset-мапперов, из них 15 переопределяют `mergeActualAndReceived`, чтобы
+  переносить только поля запроса.
 - **вложенные дети** (например, `OrderCreateDto.lines` → `OrderEntity.lines`) каскадятся неявно
   через те TypeMap, которые случайно оказались зарегистрированы; `nullifyZeroId` для детей живёт
   в пост-конвертере, потому что это единственный хук, который ModelMapper вызывает для вложенных
@@ -34,10 +41,16 @@
   создаёт все бины-мапперы, чтобы их TypeMap были зарегистрированы до первого `map()`.
 - `AbsMapperExtRelation` находит поле связи рефлексией (первое поле типа `EXT`).
 
-Потребители: LocatorServer (17 `AbsFlexMapConfigDefault`, 13 `AbsMapperExtRelation`, 11 v2-мапперов,
-138 прямых вызовов `mapper.map(x, Y.class)`) и bi-dvr (4 маппера). Оба сидят на `13.3.15-jakarta`
-и на 14.x не переезжали, поэтому перейдут на эту версию одним проходом и с неявным маппингом
-на 14.x бороться не будут вовсе.
+Потребители (цифры по ветке `feature/flex-migration` LocatorServer, на develop flex-конфигов
+три): LocatorServer — 17 `AbsFlexMapConfigDefault`, 35 Preset-мапперов
+(`AbsMapUpdateDtoToPresetEntity` / `AbsMapDtoToPresetEntity`) в 19 файлах с 21 переопределением
+`handleAfterMapSpecificFields` и 15 — `mergeActualAndReceived`, 13 `AbsMapperExtRelation`,
+11 v2- и 42 v1-маппера, 60 вызовов `map` / `mapAll` фасада в файлах, импортирующих
+`AbsModelMapper`; bi-dvr — 4 v1-маппера со своим бином ModelMapper, flex не используется.
+Оба сидят на `13.3.15-jakarta` и на 14.x не переезжали, поэтому перейдут на эту версию одним
+проходом и с неявным маппингом на 14.x бороться не будут вовсе. **Сверять API нужно с 13.3.15,
+а не с HEAD библиотеки:** Preset-классы существуют только там, HEAD удалил их в `aee52e5` как
+«неиспользуемые», не заглянув в потребителя.
 
 ## Решения, принятые с владельцем
 
@@ -54,7 +67,7 @@
    интерфейсы напрямую не реализует; view-DTO и детей закрывают базовые классы с одним
    абстрактным методом.
 5. **Фасад переименован** `AbsModelMapper` → `AbsMapper`. Сигнатуры методов сохраняются, поэтому
-   138 прямых вызовов в LocatorServer не меняются, меняется только тип параметра конструктора.
+   60 прямых вызовов в LocatorServer не меняются, меняется только тип параметра конструктора.
 6. **Версия 15.0.** Цикл 14.1 пуст (`## Не выпущено` пустой), поэтому первый коммит
    переименовывает цикл: `chore: start 15.0`.
 7. **Чекер пропускает сервисы, у которых `getEntityClass()` вернул null** (Mockito-моки в
@@ -242,6 +255,27 @@ public final class Patches<ENTITY> {
 | `AbsFlexServiceRUD` | `Mapper<ENTITY, READ_DTO>` + `Updater<UPDATE_DTO, ENTITY>` | `AbsMapEntityToDto` + `AbsMapUpdateDtoToEntity`; тела PATCH — через `patches()` конфига или бинами `Updater.of`. Если у сущности есть и create DTO (его пару в рантайме использует ext-маппер, как `MechanismModeExtMapper` в LocatorServer), удобнее один `AbsFlexMapConfig` |
 | `AbsFlexServiceCRUD`, `AbsFlexServiceExtCRUD` | + `Mapper<CREATE_DTO, ENTITY>` | один `AbsFlexMapConfig` |
 
+#### Preset-мапперы 13.3.15 → 15.0
+
+Preset — то, на чём в 13.3.15 устроен update у LocatorServer: маппер сам находит сохранённую
+строку и сам решает, что в неё переносить. В новом дизайне эти две обязанности разъезжаются
+по сервису и конфигу, а кода становится меньше:
+
+| 13.3.15 (Preset) | 15.0 |
+|---|---|
+| `AbsMapUpdateDtoToPresetEntity` из фабрики `mapperUpdateDtoToEntity(...)` | `updateEntity(UPDATE_DTO, ENTITY)` в `AbsFlexMapConfig`; фабрика исчезает |
+| `handleAfterMapSpecificFields(source, received)` → `applyToStored(id, dto)`: `entityManager.find` + перенос полей | загрузка — `loadForUpdate(id)` в сервисе (по умолчанию `findById`, переопределяется ради fetch join или фильтра); перенос полей — тело `updateEntity` на managed-сущности |
+| `mergeActualAndReceived(actual, received)`: перенос полей запроса с отсоединённой копии на `actual` | то же тело `updateEntity`, только источник — DTO, а не `received`; отсоединённой копии больше нет |
+| `AbsMapDtoToPresetEntity` для read DTO → entity из `mapperReadDtoToEntity(...)` (путь `updatePartial`) | исчезает; тела PATCH — `patches()` |
+| `mapSpecificFieldsCreateDtoToEntity(mapper, dto, entity)` поверх неявного копирования | `toEntity(CREATE_DTO)`: `new Entity()` + те же строки |
+| `createReadDtoFromEntity(mapper, entity)` | `toReadDto(ENTITY)` |
+| `mapperEntityToEntity` (self-map, движок `mergeActualAndReceived` по умолчанию) | исчезает без замены |
+| `AbsMapperExtRelation.setRelation` — рефлексивный default, переопределяется редко | абстрактный |
+
+`GeofenceMapperConfig` после переноса: `toEntity` = `new GeofenceEntity()` + `applyRequestFields`,
+`updateEntity` = `applyRequestFields(entity, dto)`, `toReadDto` без изменений, `applyToStored` и
+оба анонимных Preset-маппера удаляются; `saveAndFlush` уезжает в `saveUpdated` сервиса.
+
 Пример (test-application, `OrderMapConfig`):
 
 ```java
@@ -394,7 +428,11 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
 - Версия: `mise exec -- mvn -q versions:set -DnewVersion=15.0 -DgenerateBackupPoms=false`,
   коммит `chore: start 15.0` (переименование цикла, как 14.1 ничего не выпущено).
 - README: из списка возможностей уходит ModelMapper; шаг 4 показывает явный `AbsFlexMapConfig`;
-  новый раздел «Миграция на 15.0 (явные мапперы)» с таблицей «было → стало», вариантами PATCH
+  новый раздел «Миграция на 15.0 (явные мапперы)» с таблицей «было → стало» **по API 13.3.15,
+  на котором сидят потребители, а не по HEAD** (Preset-классы и их хуки
+  `handleAfterMapSpecificFields` / `mergeActualAndReceived`, фабрики `mapper*` конфига, хуки
+  `mapSpecificFields*` и `createReadDtoFromEntity`, `updatePartial`, `getModelMapper()`,
+  `AbsCrudCustomizer.typeMapCheckerEnabled`), вариантами PATCH
   (`updatePartial(id, partial)` → `patch(id, body)` плюс `Updater` на каждый partial-класс в
   `patches()`; `changeEntity` для замыканий), швами `loadForUpdate` / `saveUpdated` вместо
   переопределения `update`, переименованием флага `AbsCrudCustomizer`, правилом «не маппить в
