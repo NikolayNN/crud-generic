@@ -17,10 +17,11 @@
 - **read DTO → entity** регистрируется каждым `AbsFlexMapConfigDefault` ради
   `AbsTypeMapChecker` и `updatePartial`. `updatePartial(id, partial)` копирует поля partial-тела
   на прочитанный read DTO рефлексией (`FieldCopyUtil`), а затем неявно кладёт read DTO на
-  сущность. В LocatorServer это основной путь PATCH: около 20 вызовов в контроллерах Unit, User,
-  MechanismMode, Retranslator, TelegramChat, UnitGroup и в сервисах, 38 PATCH-эндпоинтов во
-  flex-контроллерах; тела — partial-классы без id (`PartialName implements PartialNameI`), id из
-  path. Контроллеры библиотеки и bi-dvr его не используют. В комментариях мапперов LocatorServer
+  сущность. В LocatorServer это основной путь PATCH: 22 вызова в 11 файлах (grep без
+  комментариев и объявлений) — контроллеры Unit, User, MechanismMode, Retranslator, TelegramChat,
+  UnitGroup и сервисы Unit, Vehicle, Sensor, Warehouse, NotificationSource; 38 PATCH-эндпоинтов
+  во flex-контроллерах; тела — partial-классы без id (`PartialName implements PartialNameI`),
+  id из path. Контроллеры библиотеки и bi-dvr его не используют. В комментариях мапперов LocatorServer
   read DTO → entity описан как опасный на 14.x: неявное копирование положило бы `owner` глубоко
   поверх managed `UserEntity` и затёрло `areaM2`.
 - **self-map entity → entity** регистрируется «для клонирования» и никем не используется.
@@ -61,9 +62,15 @@
    переключатель — `AbsCrudCustomizer`.
 8. **Поиск по интерфейсам не добавляется.** Для DTO, типизированных интерфейсом (sealed +
    records), потребитель регистрирует конкретные пары и один явный диспетчер на интерфейс.
-9. **Путь миграции LocatorServer:** сначала довести до flex на 14.0 (таблицы flex-only), потом
-   15.0 меняет только мапперы, ext-мапперы, PATCH-тела и тип фасада. Промежуточного релиза
-   13.3.16 с fallback не будет.
+9. **Путь миграции LocatorServer:** хвост v1/v2 доводится до flex на текущей 13.3.15 (flex-стек
+   там уже есть), затем 13.3.15 → 15.0 одним шагом, минуя 14.0. Через 14.0 идти нельзя: там
+   `updatePartial` кладёт read DTO на managed-сущность неявно, через этот путь пошли бы все 38
+   PATCH, а 36 фиктивных TypeMap read DTO → entity и проверки 17 хуков на коллекции с
+   `orphanRemoval` были бы выброшены на 15.0. Окно без компиляции сокращается подготовкой на
+   13.3.15: переопределить `setRelation` в 13 ext-мапперах (метод уже protected), сделать явными
+   поля в конфигах, которые сегодня опираются на неявное сопоставление (Skill, Carrier,
+   Warehouse). Промежуточного релиза библиотеки 13.3.16 не будет: новое ядро переиспользует
+   имена `AbsMapEntityToDto` / `AbsMapUpdateDtoToEntity` и рядом со старым жить не может.
 
 ## Целевой API
 
@@ -230,9 +237,10 @@ public final class Patches<ENTITY> {
 
 | Сервис | Пары, которые требует чекер | Классы потребителя |
 |---|---|---|
-| `AbsFlexServiceR`, `AbsFlexPagingAndSortingService` | `Mapper<ENTITY, READ_DTO>` | один `AbsMapEntityToDto` (как `MeetingMapper` в демо) |
-| `AbsFlexServiceRUD` без create DTO | + `Updater<UPDATE_DTO, ENTITY>` | `AbsMapEntityToDto` + `AbsMapUpdateDtoToEntity`; тела PATCH — отдельными `AbsMapUpdateDtoToEntity` или бинами `Updater.of` |
-| `AbsFlexServiceRUD` с create через ext-маппер, `AbsFlexServiceCRUD`, `AbsFlexServiceExtCRUD` | + `Mapper<CREATE_DTO, ENTITY>` | один `AbsFlexMapConfig` |
+| `AbsFlexServiceR` | `Mapper<ENTITY, READ_DTO>` | один `AbsMapEntityToDto` (как `MeetingMapper` в демо) |
+| `AbsFlexPagingAndSortingService` | чекер не проверяет; `Mapper<ENTITY, DTO>` нужен в рантайме, если `toDto` не переопределён | один `AbsMapEntityToDto` |
+| `AbsFlexServiceRUD` | `Mapper<ENTITY, READ_DTO>` + `Updater<UPDATE_DTO, ENTITY>` | `AbsMapEntityToDto` + `AbsMapUpdateDtoToEntity`; тела PATCH — через `patches()` конфига или бинами `Updater.of`. Если у сущности есть и create DTO (его пару в рантайме использует ext-маппер, как `MechanismModeExtMapper` в LocatorServer), удобнее один `AbsFlexMapConfig` |
+| `AbsFlexServiceCRUD`, `AbsFlexServiceExtCRUD` | + `Mapper<CREATE_DTO, ENTITY>` | один `AbsFlexMapConfig` |
 
 Пример (test-application, `OrderMapConfig`):
 
@@ -274,8 +282,13 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
     `current = mapReadDto` → `afterUpdateHook(current)` → hookable `afterUpdateHook(previous, current)`.
   - `update(UPDATE_DTO dto)` по сигнатуре не меняется: `checkId(dto)`, `beforeUpdateHook(dto)`,
     конвейер с `id = dto.getId()`; `mapper.map(dto, entity)` находит `Updater<UPDATE_DTO, ENTITY>`.
-    Хук `beforeUpdateHook` типизируется `UPDATE_DTO` вместо `AbstractDto<ENTITY_ID>`
-    (в потребителях его никто не переопределяет).
+    Хук `beforeUpdateHook` типизируется `UPDATE_DTO` вместо `AbstractDto<ENTITY_ID>`. В
+    LocatorServer его переопределяют `EcoDrivingCriterionService`, `LogisticSkillService` и
+    `NotificationSourceService`; правка у них — тип параметра, все три и так проверяют
+    `instanceof` или читают только id. Правило для README: проверка, которая должна закрывать
+    все пути записи, живёт в `loadForUpdate`, а не в `beforeUpdateHook`, потому что `patch` и
+    `changeEntity` его не вызывают. Запрет править глобальный навык в `LogisticSkillService` —
+    ровно такой случай, и он же убирает лишний `findById` из хука.
   - **Новый** `public READ_DTO patch(ENTITY_ID id, Object body)`: та же форма вызова, что у
     `updatePartial(id, partial)`, поэтому у потребителя меняется только имя метода, а
     partial-классы остаются. `requireNonNull(id)`, новый хук `beforePatchHook(ENTITY_ID id,
@@ -295,7 +308,7 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
   `AbsMapper`.
 - `AbsUpdateChangesHookable.beforeUpdateHook(READ_DTO previous, Object current)`: `current`
   ослабляется с `AbstractDto<ENTITY_ID>` до `Object`, потому что тело патча id не несёт.
-  Единственная реализация в потребителях, `DriverService`, использует только `previous`.
+  Реализации в потребителях, `DriverService` и `UserService`, `current` не используют.
   `afterUpdateHook(previous, current)` без изменений.
 
 ### Поведение при ошибках
@@ -365,7 +378,9 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   когда выключен; сервис с null-классами (мок) пропускается с WARN и не ломает старт;
   `isRunning` равен false после неудачного старта.
 - `AbsGenericCrudConfigurationTest`: три бина существуют, бина ModelMapper нет, `AbsMapper`
-  создаётся раньше реестра.
+  создаётся раньше реестра; контекст без единого маппера и сервиса стартует (Spring подставляет
+  пустые коллекции в параметры `@Bean`-метода, как сегодня живёт чекер в
+  `DriverMapperConfigTest` LocatorServer).
 - `AbsFlexServiceRUDPatchTest`: `patch(id, body)` запускает `beforePatchHook`, hookable-хуки и
   `afterUpdateHook`; отсутствие `Updater` всплывает как `MappingNotFoundException`;
   `changeEntity` применяет изменение, сохраняет, запускает after-хуки и пропускает before-хуки
@@ -383,10 +398,11 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   (`updatePartial(id, partial)` → `patch(id, body)` плюс `Updater` на каждый partial-класс в
   `patches()`; `changeEntity` для замыканий), швами `loadForUpdate` / `saveUpdated` вместо
   переопределения `update`, переименованием флага `AbsCrudCustomizer`, правилом «не маппить в
-  конструкторах и `@PostConstruct`», диспетчером для интерфейсных DTO и предупреждением про
+  конструкторах и `@PostConstruct`», правилом «проверки на все пути записи — в `loadForUpdate`,
+  а не в `beforeUpdateHook`», диспетчером для интерфейсных DTO и предупреждением про
   AOP-pointcut'ы на `updatePartial` (`TrackerCertificateExpireCacheAspect` в LocatorServer
-  сломается молча). Порядок для потребителя на 13.3.15: сначала таблица flex-only (14.0),
-  потом эта.
+  сломается молча). Порядок для потребителя на 13.3.15: хвост v1/v2 → flex на 13.3.15 по
+  таблице flex-only, затем 13.3.15 → 15.0 одним шагом по этой таблице, минуя 14.0.
 - CHANGELOG, `## Не выпущено`: описание изменения по-русски в стиле записи 14.0.
 - CLAUDE.md: одна строка — маппинг только явный, через реестр; никакого ModelMapper и рефлексии
   в маппинге.
@@ -414,8 +430,8 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
 ## Вне задачи
 
 - Миграция самих LocatorServer и bi-dvr (отдельная работа на каждого потребителя, опирается на
-  таблицы в README). LocatorServer сначала доводится до flex на 14.0, затем переходит на 15.0;
-  промежуточного релиза библиотеки с fallback не будет.
+  таблицы в README). LocatorServer доводит хвост до flex на 13.3.15, затем переходит на 15.0
+  одним шагом, минуя 14.0; промежуточного релиза библиотеки не будет.
 - Покрытие чекером `AbsFlexPagingAndSortingService` (его `toDto` может быть переопределён,
   поэтому отсутствие пары там не обязательно ошибка).
 - Любые изменения в `filterspecification`, `pageable`, контроллерах и зависимости `commons-lang3`.
