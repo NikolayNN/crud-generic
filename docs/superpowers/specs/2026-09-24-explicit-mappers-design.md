@@ -1,61 +1,62 @@
-# Explicit mappers instead of ModelMapper — Design
+# Явные мапперы вместо ModelMapper — дизайн
 
-**Date:** 2026-09-24
-**Status:** approved
+**Дата:** 2026-09-24
+**Статус:** утверждён
 
-## Context
+## Контекст
 
-Every DTO ↔ entity conversion in the flex stack goes through ModelMapper. Only one direction is
-actually explicit today: entity → read DTO, where `AbsMapEntityToDto` installs a converter that
-calls the consumer's `create(entity)`. Everything else is implicit field matching that the owner
-keeps fighting:
+Каждое преобразование DTO ↔ entity в flex-стеке идёт через ModelMapper. По-настоящему явным
+сегодня является только одно направление: entity → read DTO, где `AbsMapEntityToDto` ставит
+конвертер, вызывающий `create(entity)` потребителя. Всё остальное — неявное сопоставление полей,
+с которым владелец постоянно борется:
 
-- **create DTO → entity** and **update DTO → entity** copy fields by name (STANDARD matching,
-  field matching on, `skipNull`), then run the `mapSpecificFields` hook. What gets copied depends
-  on accessor names, Lombok annotations and ModelMapper's matching rules, not on code the consumer
-  wrote.
-- **read DTO → entity** is registered by every `AbsFlexMapConfigDefault` only so that
-  `AbsTypeMapChecker` and `updatePartial` are satisfied. `updatePartial` is called by nobody:
-  not by the library controllers, not by LocatorServer, not by bi-dvr. LocatorServer's own mapper
-  comments describe this map as dangerous on 14.x: implicit mapping would copy `owner` deep over
-  the managed `UserEntity` and overwrite `areaM2`.
-- **entity → entity self-map** is registered for "cloning" and used by nobody.
-- **nested children** (e.g. `OrderCreateDto.lines` → `OrderEntity.lines`) cascade implicitly
-  through whatever type maps happen to be registered; `nullifyZeroId` for children lives in a
-  post-converter because that is the only hook ModelMapper fires for nested objects.
-- Registration is a constructor side effect (`AbsMapBasic` calls `createTypeMap` in its
-  constructor), which is why `AbsMapperEagerInitPostProcessor` exists: to force every mapper bean
-  to be instantiated so its type map gets registered before the first `map()` call.
-- `AbsMapperExtRelation` finds the relation field by reflection (first field whose type is `EXT`).
+- **create DTO → entity** и **update DTO → entity** копируют поля по имени (STANDARD matching,
+  field matching включён, `skipNull`), после чего вызывается хук `mapSpecificFields`. Что именно
+  скопируется, зависит от имён акцессоров, аннотаций Lombok и правил сопоставления ModelMapper,
+  а не от кода, который написал потребитель.
+- **read DTO → entity** регистрируется каждым `AbsFlexMapConfigDefault` только ради
+  `AbsTypeMapChecker` и `updatePartial`. `updatePartial` не вызывает никто: ни контроллеры
+  библиотеки, ни LocatorServer, ни bi-dvr. В комментариях мапперов LocatorServer этот маппинг
+  описан как опасный на 14.x: неявное копирование положило бы `owner` глубоко поверх managed
+  `UserEntity` и затёрло `areaM2`.
+- **self-map entity → entity** регистрируется «для клонирования» и никем не используется.
+- **вложенные дети** (например, `OrderCreateDto.lines` → `OrderEntity.lines`) каскадятся неявно
+  через те TypeMap, которые случайно оказались зарегистрированы; `nullifyZeroId` для детей живёт
+  в пост-конвертере, потому что это единственный хук, который ModelMapper вызывает для вложенных
+  объектов.
+- Регистрация — побочный эффект конструктора (`AbsMapBasic` зовёт `createTypeMap` в
+  конструкторе), из-за чего и существует `AbsMapperEagerInitPostProcessor`: он принудительно
+  создаёт все бины-мапперы, чтобы их TypeMap были зарегистрированы до первого `map()`.
+- `AbsMapperExtRelation` находит поле связи рефлексией (первое поле типа `EXT`).
 
-Consumers: LocatorServer (17 `AbsFlexMapConfigDefault`, 13 `AbsMapperExtRelation`, 11 v2 mappers,
-138 direct `mapper.map(x, Y.class)` calls) and bi-dvr (4 mappers). Both are on `13.3.15-jakarta`
-and have not migrated to 14.x, so they will move to this version in one pass and never have to
-fight implicit mapping on 14.x at all.
+Потребители: LocatorServer (17 `AbsFlexMapConfigDefault`, 13 `AbsMapperExtRelation`, 11 v2-мапперов,
+138 прямых вызовов `mapper.map(x, Y.class)`) и bi-dvr (4 маппера). Оба сидят на `13.3.15-jakarta`
+и на 14.x не переезжали, поэтому перейдут на эту версию одним проходом и с неявным маппингом
+на 14.x бороться не будут вовсе.
 
-## Decisions made with the owner
+## Решения, принятые с владельцем
 
-1. **Hard cut.** ModelMapper is removed from the library. No fallback: a pair that is not in the
-   registry is an error at startup (checker) or at call time.
-2. **`updatePartial` and the read DTO → entity map are removed**, together with `FieldCopyUtil`
-   (reflection-based field copy used only there). PATCH is served by `patch(dto)` (registry-based)
-   and `changeEntity(id, change)` (closure-based), both explicit.
-3. **`AbsMapperExtRelation.setRelation` becomes abstract**; the reflective field search is deleted.
-4. **API shape:** two interfaces `Mapper` / `Updater`, a `MapperRegistry`, and one
-   `AbsFlexMapConfig` per entity with three abstract methods. Consumers never implement the
-   interfaces directly for the CRUD triple; base classes with one abstract method cover view DTOs
-   and children.
-5. **Facade renamed** `AbsModelMapper` → `AbsMapper`. Method signatures stay, so the 138 direct
-   call sites in LocatorServer do not change; only the constructor parameter type does.
-6. **Version 15.0.** The 14.1 cycle has nothing in it (`## Не выпущено` is empty), so the first
-   commit renames the cycle: `chore: start 15.0`.
+1. **Жёсткий переход.** ModelMapper удаляется из библиотеки. Никакого fallback: пара, которой нет
+   в реестре, — ошибка на старте (чекер) или при вызове.
+2. **`updatePartial` и маппинг read DTO → entity удаляются** вместе с `FieldCopyUtil`
+   (копирование полей рефлексией, использовалось только там). PATCH обслуживают `patch(dto)`
+   (через реестр) и `changeEntity(id, change)` (через замыкание), оба явные.
+3. **`AbsMapperExtRelation.setRelation` становится абстрактным**; рефлексивный поиск поля удаляется.
+4. **Форма API:** два интерфейса `Mapper` / `Updater`, `MapperRegistry` и один
+   `AbsFlexMapConfig` на сущность с тремя абстрактными методами. Для CRUD-тройки потребитель
+   интерфейсы напрямую не реализует; view-DTO и детей закрывают базовые классы с одним
+   абстрактным методом.
+5. **Фасад переименован** `AbsModelMapper` → `AbsMapper`. Сигнатуры методов сохраняются, поэтому
+   138 прямых вызовов в LocatorServer не меняются, меняется только тип параметра конструктора.
+6. **Версия 15.0.** Цикл 14.1 пуст (`## Не выпущено` пустой), поэтому первый коммит
+   переименовывает цикл: `chore: start 15.0`.
 
-## Target API
+## Целевой API
 
-All mapper types live in `by.nhorushko.crudgeneric.flex.mapper`. The sub-packages `mapper.core`,
-`mapper.composite` and `mapper.mapper` disappear.
+Все типы мапперов живут в `by.nhorushko.crudgeneric.flex.mapper`. Подпакеты `mapper.core`,
+`mapper.composite` и `mapper.mapper` исчезают.
 
-### Core interfaces
+### Базовые интерфейсы
 
 ```java
 public interface Mapper<FROM, TO> {
@@ -74,44 +75,44 @@ public interface Updater<FROM, TO> {
     static <F, T> Updater<F, T> of(Class<F> from, Class<T> to, BiConsumer<F, T> fn);
 }
 
-/** A bean that contributes several mappers at once (AbsFlexMapConfig implements it). */
+/** Бин, отдающий несколько мапперов разом (его реализует AbsFlexMapConfig). */
 public interface MapperSource {
     Collection<Mapper<?, ?>> mappers();
     Collection<Updater<?, ?>> updaters();
 }
 ```
 
-Pair classes are declared explicitly (`fromClass()` / `toClass()`), exactly as today's base classes
-take them in the constructor. Generic-parameter resolution via `ResolvableType` is deliberately
-not used: it is another kind of magic and does not work for lambdas.
+Классы пары объявляются явно (`fromClass()` / `toClass()`), ровно так же, как сегодняшние базовые
+классы принимают их в конструкторе. Вывод generic-параметров через `ResolvableType` намеренно не
+используется: это ещё один вид магии, и для лямбд он не работает.
 
 ### `MapperRegistry`
 
-- Built once from every `Mapper`, `Updater` and `MapperSource` bean; `MapperSource` beans are
-  unrolled. Immutable afterwards except for the lookup cache.
-- Two maps keyed by `(fromClass, toClass)`. Registering a pair twice fails construction with
-  `IllegalStateException` naming the pair and both implementations.
-- **Lookup** `mapper(Class<?> from, Class<T> to)`: exact key first, then `from.getSuperclass()`
-  up to `Object`. Interfaces are not consulted (a class implementing two registered interfaces
-  would be ambiguous). This is what makes Hibernate proxies and DTO subclasses resolve.
-- **Lookup** `updater(Class<?> from, Class<?> to)`: walks the source chain as above and
-  additionally the destination chain, because the destination is an existing instance that may be
-  a Hibernate proxy (`getReference`).
-- Resolved lookups are cached per `(runtime from, runtime to)` in a `ConcurrentHashMap`.
-- A miss throws `MappingNotFoundException` (`flex.exception`, extends `RuntimeException`) with
-  the direction and both fully qualified class names, e.g.
+- Собирается один раз из всех бинов `Mapper`, `Updater` и `MapperSource`; `MapperSource`
+  разворачиваются. После сборки неизменяем, кроме кэша поиска.
+- Две карты с ключом `(fromClass, toClass)`. Повторная регистрация пары ломает сборку
+  `IllegalStateException` с указанием пары и обеих реализаций.
+- **Поиск** `mapper(Class<?> from, Class<T> to)`: сначала точный ключ, затем `from.getSuperclass()`
+  вплоть до `Object`. Интерфейсы не рассматриваются (класс, реализующий два зарегистрированных
+  интерфейса, был бы двусмысленным). Именно так находятся Hibernate-прокси и наследники DTO.
+- **Поиск** `updater(Class<?> from, Class<?> to)`: идёт по цепочке источника, как выше, и
+  дополнительно по цепочке назначения, потому что назначение — существующий экземпляр, который
+  может оказаться Hibernate-прокси (`getReference`).
+- Найденные пары кэшируются по `(runtime from, runtime to)` в `ConcurrentHashMap`.
+- Промах бросает `MappingNotFoundException` (`flex.exception`, наследует `RuntimeException`)
+  с направлением и обоими полными именами классов, например
   `No Updater registered for com.x.OrderUpdateDto -> com.x.OrderEntity`.
-- `find*` variants return `Optional` for the checker.
+- Варианты `find*` возвращают `Optional` для чекера.
 
-### Facade `AbsMapper` (replaces `AbsModelMapper`)
+### Фасад `AbsMapper` (заменяет `AbsModelMapper`)
 
 ```java
 public class AbsMapper {
-    public AbsMapper(MapperRegistry registry, EntityManager entityManager);           // tests
-    public AbsMapper(Supplier<MapperRegistry> registry, EntityManager entityManager); // Spring, lazy
+    public AbsMapper(MapperRegistry registry, EntityManager entityManager);           // тесты
+    public AbsMapper(Supplier<MapperRegistry> registry, EntityManager entityManager); // Spring, лениво
 
     public <T> T map(Object source, Class<T> destinationType);   // null source → null
-    public <T> T map(Object source, T destination);              // null source → destination unchanged; uses Updater
+    public <T> T map(Object source, T destination);              // null source → destination без изменений; через Updater
     public <T> List<T> mapAll(Collection<?> source, Class<T> destinationType); // null → null
     public <T extends AbstractEntity<?>> T reference(AbstractDto<?> dto, Class<T> entityClass);
     public <T extends AbstractEntity<?>> T referenceById(Object id, Class<T> entityClass);
@@ -119,37 +120,37 @@ public class AbsMapper {
 }
 ```
 
-`getModelMapper()` is gone. The registry is resolved from the supplier on first use and memoised.
-That is what breaks the bean cycle *mapper bean → AbsMapper → MapperRegistry → every mapper bean*:
-`AbsMapper` never touches the registry during construction, so mapper beans keep injecting
-`AbsMapper` in their constructors exactly as they inject `AbsModelMapper` today.
+`getModelMapper()` исчезает. Реестр получается из supplier при первом обращении и запоминается.
+Именно это рвёт цикл бинов *бин-маппер → AbsMapper → MapperRegistry → все бины-мапперы*:
+`AbsMapper` не трогает реестр при создании, поэтому мапперы продолжают инжектить `AbsMapper`
+в конструктор ровно так, как сегодня инжектят `AbsModelMapper`.
 
-### Spring wiring (`flex.config`)
+### Spring-связка (`flex.config`)
 
-`AbsGenericCrudConfiguration` (imported by `@EnableAbsGenericCrud`, unchanged annotation):
+`AbsGenericCrudConfiguration` (импортируется через `@EnableAbsGenericCrud`, аннотация не меняется):
 
-| Bean | Depends on | Notes |
+| Бин | Зависит от | Примечание |
 |---|---|---|
-| `MapperRegistry` | `List<Mapper<?,?>>`, `List<Updater<?,?>>`, `List<MapperSource>` | Spring instantiates every mapper bean to satisfy the injection, lazy-init or not. |
+| `MapperRegistry` | `List<Mapper<?,?>>`, `List<Updater<?,?>>`, `List<MapperSource>` | Spring создаёт все бины-мапперы, чтобы удовлетворить инъекцию, lazy-init или нет. |
 | `AbsMapper` | `ObjectProvider<MapperRegistry>`, `EntityManager` | `new AbsMapper(provider::getObject, em)`. |
-| `AbsMappingChecker` | `List<? extends AbsFlexServiceR>`, `MapperRegistry`, `AbsCrudCustomizer` | `SmartLifecycle`, phase `Integer.MAX_VALUE`, replaces `AbsTypeMapChecker`. |
+| `AbsMappingChecker` | `List<? extends AbsFlexServiceR>`, `MapperRegistry`, `AbsCrudCustomizer` | `SmartLifecycle`, фаза `Integer.MAX_VALUE`, заменяет `AbsTypeMapChecker`. |
 
-`AbsMappingChecker.start()` checks, per service: `Mapper<ENTITY, READ_DTO>`; for
-`AbsFlexServiceRUD` also `Updater<UPDATE_DTO, ENTITY>`; for `AbsFlexServiceCRUD` and
-`AbsFlexServiceExtCRUD` also `Mapper<CREATE_DTO, ENTITY>`. It collects every missing pair and fails
-once with `IllegalStateException` listing all of them (today it stops at the first). `isRunning`
-is set only after the check passes, as today.
+`AbsMappingChecker.start()` проверяет по каждому сервису: `Mapper<ENTITY, READ_DTO>`; для
+`AbsFlexServiceRUD` ещё `Updater<UPDATE_DTO, ENTITY>`; для `AbsFlexServiceCRUD` и
+`AbsFlexServiceExtCRUD` ещё `Mapper<CREATE_DTO, ENTITY>`. Собирает все недостающие пары и падает
+один раз `IllegalStateException` с их списком (сегодня останавливается на первой). `isRunning`
+выставляется только после успешной проверки, как сейчас.
 
-`AbsMapperEagerInitPostProcessor` is deleted. Why it is no longer needed: registration is no longer
-a constructor side effect. The registry pulls every mapper bean through constructor injection.
-`SmartLifecycle` beans are instantiated at refresh even under `spring.main.lazy-initialization=true`,
-so the checker builds the registry, which builds every mapper, before `start()`. With the checker
-disabled the registry is built on the first `map()` call and still sees every bean definition.
+`AbsMapperEagerInitPostProcessor` удаляется. Почему он больше не нужен: регистрация перестала быть
+побочным эффектом конструктора. Реестр вытягивает все бины-мапперы через инъекцию в конструктор.
+Бины `SmartLifecycle` создаются при refresh даже при `spring.main.lazy-initialization=true`,
+поэтому чекер собирает реестр, а тот создаёт все мапперы до `start()`. При выключенном чекере
+реестр собирается при первом `map()` и всё равно видит все определения бинов.
 
-`AbsCrudCustomizer` keeps one flag, `mappingCheckerEnabled` (default `true`).
-`typeMapCheckerEnabled` and `eagerTypeMapRegistration` are removed.
+В `AbsCrudCustomizer` остаётся один флаг, `mappingCheckerEnabled` (по умолчанию `true`).
+`typeMapCheckerEnabled` и `eagerTypeMapRegistration` удаляются.
 
-### Base classes for consumers
+### Базовые классы для потребителей
 
 ```java
 public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto,
@@ -164,7 +165,7 @@ public abstract class AbsFlexMapConfig<CREATE_DTO extends AbsBaseDto,
     protected abstract void updateEntity(UPDATE_DTO dto, ENTITY entity);
     protected abstract READ_DTO toReadDto(ENTITY entity);
 
-    /** Extra in-place updaters for PATCH bodies; default: none. */
+    /** Дополнительные in-place апдейтеры для тел PATCH; по умолчанию пусто. */
     protected void patches(Patches<ENTITY> p) { }
 }
 
@@ -173,24 +174,24 @@ public final class Patches<ENTITY> {
 }
 ```
 
-`mappers()` returns `Mapper<CREATE_DTO, ENTITY>` (wraps `toEntity`, then calls
-`entity.nullifyZeroId()` on the result) and `Mapper<ENTITY, READ_DTO>` (wraps `toReadDto`).
-`updaters()` returns `Updater<UPDATE_DTO, ENTITY>` (wraps `updateEntity`) plus one `Updater` per
-`patches()` entry. The "id 0 means new" normalisation stays: it is a documented library rule, not
-implicit matching.
+`mappers()` возвращает `Mapper<CREATE_DTO, ENTITY>` (оборачивает `toEntity`, затем зовёт
+`entity.nullifyZeroId()` на результате) и `Mapper<ENTITY, READ_DTO>` (оборачивает `toReadDto`).
+`updaters()` возвращает `Updater<UPDATE_DTO, ENTITY>` (оборачивает `updateEntity`) плюс по одному
+`Updater` на каждую запись `patches()`. Нормализация «id 0 значит новый» остаётся: это
+документированное правило библиотеки, а не неявное сопоставление.
 
-Standalone bases, each with one abstract method:
+Одиночные базы, у каждой один абстрактный метод:
 
-| Class | Implements | Abstract method | Notes |
+| Класс | Реализует | Абстрактный метод | Примечание |
 |---|---|---|---|
-| `AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>>` | `Mapper<ENTITY, DTO>` | `DTO create(ENTITY from)` | Same contract as today, ModelMapper internals removed. |
-| `AbsMapDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>>` | `Mapper<DTO, ENTITY>` | `ENTITY create(DTO from)` | `map()` = `create()` + `nullifyZeroId()`. Replaces `AbsMapBasic`, `AbsMapBaseDtoToEntity`, `AbsMapCreateDtoToEntity`. |
+| `AbsMapEntityToDto<ENTITY extends AbstractEntity<?>, DTO extends AbstractDto<?>>` | `Mapper<ENTITY, DTO>` | `DTO create(ENTITY from)` | Контракт как сегодня, внутренности ModelMapper удалены. |
+| `AbsMapDtoToEntity<DTO extends AbsBaseDto, ENTITY extends AbstractEntity<?>>` | `Mapper<DTO, ENTITY>` | `ENTITY create(DTO from)` | `map()` = `create()` + `nullifyZeroId()`. Заменяет `AbsMapBasic`, `AbsMapBaseDtoToEntity`, `AbsMapCreateDtoToEntity`. |
 | `AbsMapUpdateDtoToEntity<DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>>` | `Updater<DTO, ENTITY>` | `void update(DTO from, ENTITY into)` | |
-| `AbsMapperExtRelation<DTO extends AbsCreateDto, ENTITY, EXT_ID, EXT extends AbstractEntity<?>>` | — | `void setRelation(ENTITY target, EXT relation)` | `map(extId, dto)` / `mapAll` unchanged: `mapper.map(dto, entityClass)` + `referenceById`. `FieldUtils` search deleted. |
+| `AbsMapperExtRelation<DTO extends AbsCreateDto, ENTITY, EXT_ID, EXT extends AbstractEntity<?>>` | — | `void setRelation(ENTITY target, EXT relation)` | `map(extId, dto)` / `mapAll` без изменений: `mapper.map(dto, entityClass)` + `referenceById`. Поиск через `FieldUtils` удалён. |
 
-All constructors take `AbsMapper` first, then the pair classes, as today.
+Все конструкторы принимают первым `AbsMapper`, затем классы пары, как сегодня.
 
-Example (test-application `OrderMapConfig`):
+Пример (test-application, `OrderMapConfig`):
 
 ```java
 @Component
@@ -201,7 +202,7 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
     @Override protected OrderEntity toEntity(OrderCreateDto dto) {
         OrderEntity e = new OrderEntity();
         e.setName(dto.getName());
-        e.setLines(mapper.mapAll(dto.getLines(), OrderLineEntity.class)); // nested children: explicit
+        e.setLines(mapper.mapAll(dto.getLines(), OrderLineEntity.class)); // вложенные дети: явно
         return e;
     }
     @Override protected void updateEntity(OrderUpdateDto dto, OrderEntity e) { e.setName(dto.getName()); }
@@ -212,138 +213,139 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
 }
 ```
 
-### Services (`flex.service`)
+### Сервисы (`flex.service`)
 
-- `AbsFlexServiceR`: field type `AbsMapper`; `mapReadDto` / `mapAllReadDto` unchanged.
+- `AbsFlexServiceR`: тип поля `AbsMapper`; `mapReadDto` / `mapAllReadDto` без изменений.
 - `AbsFlexServiceRUD`:
-  - `update(UPDATE_DTO)` unchanged in signature; the in-place `mapper.map(dto, entity)` now
-    resolves `Updater<UPDATE_DTO, ENTITY>`.
-  - **New** `public READ_DTO patch(AbstractDto<ENTITY_ID> body)`: same private `runUpdate`
-    pipeline as `update` (id check, `beforeUpdateHook`, `AbsUpdateChangesHookable` hooks, load,
-    `mapper.map(body, entity)`, save, `afterUpdateHook`). Needs an `Updater<body class, ENTITY>`;
-    otherwise `MappingNotFoundException`.
-  - **New** `protected READ_DTO changeEntity(ENTITY_ID id, Consumer<ENTITY> change)`: load or
-    `AppNotFoundException`; if the service is `AbsUpdateChangesHookable`, snapshot
-    `previous = mapReadDto(entity)` before the change; apply `change`; `repository.save`;
+  - `update(UPDATE_DTO)` по сигнатуре не меняется; in-place `mapper.map(dto, entity)` теперь
+    находит `Updater<UPDATE_DTO, ENTITY>`.
+  - **Новый** `public READ_DTO patch(AbstractDto<ENTITY_ID> body)`: тот же приватный конвейер
+    `runUpdate`, что и у `update` (проверка id, `beforeUpdateHook`, хуки
+    `AbsUpdateChangesHookable`, загрузка, `mapper.map(body, entity)`, сохранение,
+    `afterUpdateHook`). Требует `Updater<класс тела, ENTITY>`; иначе `MappingNotFoundException`.
+  - **Новый** `protected READ_DTO changeEntity(ENTITY_ID id, Consumer<ENTITY> change)`: загрузить
+    или `AppNotFoundException`; если сервис реализует `AbsUpdateChangesHookable`, снять
+    `previous = mapReadDto(entity)` до изменения; применить `change`; `repository.save`;
     `current = mapReadDto`; `afterUpdateHook(current)`; hookable `afterUpdateHook(previous, current)`.
-    The DTO-taking before-hooks are skipped because there is no DTO; the javadoc says so.
-  - **Removed**: `updatePartial`, `copyPartial`, `IGNORE_PARTIAL_UPDATE_PROPERTIES`,
+    Before-хуки, принимающие DTO, пропускаются, потому что DTO нет; javadoc это оговаривает.
+  - **Удаляются**: `updatePartial`, `copyPartial`, `IGNORE_PARTIAL_UPDATE_PROPERTIES`,
     `mapEntity(Object)`, `mapAllEntities(Collection<?>)`.
-- `AbsFlexServiceCRUD`: **new** `protected ENTITY mapEntity(CREATE_DTO)` and
-  `protected List<ENTITY> mapAllEntities(Collection<CREATE_DTO>)` (typed, moved here from RUD).
-  `save` / `saveAll` / `persistOrMerge` unchanged.
-- `AbsFlexServiceExtCRUD`, `AbsFlexPagingAndSortingService`, all `AbsFlexController*`: only the
-  `AbsMapper` type.
-- `AbsUpdateChangesHookable` unchanged (`beforeUpdateHook(READ_DTO previous, AbstractDto<ENTITY_ID> current)`
-  already fits patch bodies).
+- `AbsFlexServiceCRUD`: **новые** `protected ENTITY mapEntity(CREATE_DTO)` и
+  `protected List<ENTITY> mapAllEntities(Collection<CREATE_DTO>)` (типизированы, переехали сюда
+  из RUD). `save` / `saveAll` / `persistOrMerge` без изменений.
+- `AbsFlexServiceExtCRUD`, `AbsFlexPagingAndSortingService`, все `AbsFlexController*`: только тип
+  `AbsMapper`.
+- `AbsUpdateChangesHookable` не меняется (`beforeUpdateHook(READ_DTO previous, AbstractDto<ENTITY_ID> current)`
+  уже подходит для тел патчей).
 
-### Error behaviour
+### Поведение при ошибках
 
-| Situation | Exception | When |
+| Ситуация | Исключение | Когда |
 |---|---|---|
-| Pair missing from registry | `MappingNotFoundException` (direction + both FQCNs) | call time |
-| Same pair registered twice | `IllegalStateException` (pair + both implementations) | registry construction |
-| Service without its mappers | `IllegalStateException` listing every missing pair | context start (`AbsMappingChecker`) |
+| Пары нет в реестре | `MappingNotFoundException` (направление + оба FQCN) | при вызове |
+| Одна пара зарегистрирована дважды | `IllegalStateException` (пара + обе реализации) | сборка реестра |
+| У сервиса нет его мапперов | `IllegalStateException` со списком всех недостающих пар | старт контекста (`AbsMappingChecker`) |
 
-## Deleted
+## Удаляется
 
-Library main: `AbsModelMapper`, `mapper.core.AbsMapBasic`, `mapper.core.AbsMapBaseDtoToEntity`,
-`mapper.core.AbsMapDtoToEntity` (old), `mapper.core.RegisterableMapper`,
+Main библиотеки: `AbsModelMapper`, `mapper.core.AbsMapBasic`, `mapper.core.AbsMapBaseDtoToEntity`,
+`mapper.core.AbsMapDtoToEntity` (старый), `mapper.core.RegisterableMapper`,
 `mapper.AbsMapCreateDtoToEntity`, `mapper.composite.AbsFlexMapConfigAbstract`,
 `mapper.composite.AbsFlexMapConfigDefault`, `config.AbsMapperEagerInitPostProcessor`,
-`config.AbsTypeMapChecker`, `util.FieldCopyUtil`. Dependency `org.modelmapper:modelmapper` removed
-from `library/pom.xml`. `commons-lang3` stays (`filterspecification`, `PageFilterRequest`).
+`config.AbsTypeMapChecker`, `util.FieldCopyUtil`. Зависимость `org.modelmapper:modelmapper`
+убирается из `library/pom.xml`. `commons-lang3` остаётся (`filterspecification`, `PageFilterRequest`).
 
-Library tests: `AbsModelMapperInPlaceMapTest`, `AbsMapperEagerInitPostProcessorTest`,
+Тесты библиотеки: `AbsModelMapperInPlaceMapTest`, `AbsMapperEagerInitPostProcessorTest`,
 `AbsCrudCustomizerEagerFlagTest`, `AbsMapBasicRegistrationTest`, `AbsFlexMapConfigSharedEntityTest`,
-`AbsMapBaseDtoToEntityNullifyZeroIdTest`, `AbsTypeMapCheckerTest` (the last two are rewritten
-under new names, see below).
+`AbsMapBaseDtoToEntityNullifyZeroIdTest`, `AbsTypeMapCheckerTest` (последние два переписываются
+под новыми именами, см. ниже).
 
-test-application: `config/ModelMapperConfig`, `eagerinit/*` (three tests), `util/FieldCopyUtilTest`.
+test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста), `util/FieldCopyUtilTest`.
 
-## test-application migration
+## Миграция test-application
 
-- `OrderMapConfig`, `RegionMapConfig`, `TaskMapConfig` → `AbsFlexMapConfig` with explicit
-  `toEntity` / `updateEntity` / `toReadDto`; Order maps `lines` through `mapper.mapAll` and
-  declares `OrderNamePatch` in `patches()`.
-- `OrderLineMapConfig` → `OrderLineMapper extends AbsMapDtoToEntity` (create direction only; no IT
-  maps `OrderLineEntity` back to `OrderLineDto`, so no read-direction mapper is registered).
-- `MeetingMapper`, `OrderViewMapper`: constructor parameter type only.
-- `TaskExtMapper`: implements `setRelation(TaskEntity task, ProjectEntity project)`.
-- Services: constructor parameter type. `OrderServiceCRUD` gains `rename(id, name)` built on
-  `changeEntity`, used by the new IT.
-- New IT `FlexPatchIT`: `patch(OrderNamePatch)` goes through the registered `Updater` and the
-  update hooks; `rename` goes through `changeEntity`; a patch body with no `Updater` fails with
+- `OrderMapConfig`, `RegionMapConfig`, `TaskMapConfig` → `AbsFlexMapConfig` с явными
+  `toEntity` / `updateEntity` / `toReadDto`; Order маппит `lines` через `mapper.mapAll` и
+  объявляет `OrderNamePatch` в `patches()`.
+- `OrderLineMapConfig` → `OrderLineMapper extends AbsMapDtoToEntity` (только create-направление;
+  ни один IT не маппит `OrderLineEntity` обратно в `OrderLineDto`, поэтому read-направление
+  не регистрируется).
+- `MeetingMapper`, `OrderViewMapper`: только тип параметра конструктора.
+- `TaskExtMapper`: реализует `setRelation(TaskEntity task, ProjectEntity project)`.
+- Сервисы: тип параметра конструктора. `OrderServiceCRUD` получает `rename(id, name)` поверх
+  `changeEntity`, его использует новый IT.
+- Новый IT `FlexPatchIT`: `patch(OrderNamePatch)` идёт через зарегистрированный `Updater` и хуки
+  обновления; `rename` идёт через `changeEntity`; тело патча без `Updater` падает с
   `MappingNotFoundException`.
-- New IT `MapperRegistryLazyInitIT`: context started with `spring.main.lazy-initialization=true`
-  has every mapper of the demo in the registry and the checker passes (replaces `eagerinit/*`).
-- `FlexSaveOverridingMapperIT`: the ModelMapper `customizeTypeMap` override becomes a
-  `Mapper.of(ZeroIdOrderCreate.class, OrderEntity.class, ...)` bean that copies id `0` verbatim;
-  the assertion (persistOrMerge still inserts) is unchanged.
-- `FlexTwoConfigsForSameEntityIT`: unchanged in intent; two configs for one entity register
-  distinct pairs and do not collide.
-- Every other IT (`FlexSaveCascadeIT`, `FlexUpdateIT`, `FlexDeleteIT`, `FlexExtSaveIT`,
-  `FlexAssignedIdSaveIT`, `MeetingPage*IT`) stays as is. Their staying green is the proof that
-  service behaviour did not change.
+- Новый IT `MapperRegistryLazyInitIT`: контекст, поднятый с `spring.main.lazy-initialization=true`,
+  содержит в реестре все мапперы демо, и чекер проходит (заменяет `eagerinit/*`).
+- `FlexSaveOverridingMapperIT`: переопределение `customizeTypeMap` из ModelMapper становится бином
+  `Mapper.of(ZeroIdOrderCreate.class, OrderEntity.class, ...)`, копирующим id `0` как есть;
+  проверка (persistOrMerge всё равно вставляет) не меняется.
+- `FlexTwoConfigsForSameEntityIT`: по смыслу не меняется; два конфига на одну сущность регистрируют
+  разные пары и не конфликтуют.
+- Все остальные IT (`FlexSaveCascadeIT`, `FlexUpdateIT`, `FlexDeleteIT`, `FlexExtSaveIT`,
+  `FlexAssignedIdSaveIT`, `MeetingPage*IT`) остаются как есть. То, что они остаются зелёными, и
+  есть доказательство, что поведение сервисов не изменилось.
 
-## Library unit tests (new or rewritten)
+## Юнит-тесты библиотеки (новые или переписанные)
 
-- `MapperRegistryTest`: exact lookup; superclass walk (registered for `Base`, instance of
-  `Sub extends Base` resolves); updater walks the destination chain too; interfaces are not
-  consulted; duplicate pair fails with both names; miss throws `MappingNotFoundException` with
-  the direction; `MapperSource` is unrolled; two sources sharing an entity with different DTOs
-  coexist.
-- `AbsMapperTest`: null handling of all three `map*` methods; `map(from, into)` delegates to the
-  `Updater` and returns `into`; the registry supplier is called once.
-- `AbsFlexMapConfigTest`: exposes exactly three adapters with the declared classes plus one per
-  `patches()` entry; `toEntity` result with id `0` comes back with `null` id.
-- `AbsMapDtoToEntityNullifyZeroIdTest`: rewrite of the existing test on the new base.
-- `AbsMappingCheckerTest`: reports every missing pair in one exception; skips when disabled;
-  `isRunning` is false after a failed start.
-- `AbsGenericCrudConfigurationTest`: the three beans exist, no ModelMapper bean, `AbsMapper`
-  is constructible before the registry is.
-- `AbsFlexServiceRUDPatchTest`: `patch` runs the same hooks as `update`; missing `Updater`
-  surfaces as `MappingNotFoundException`; `changeEntity` applies the change, saves, runs the
-  after-hooks and skips the DTO before-hooks.
-- `AbsMapperExtRelationTest`: `map(extId, dto)` calls the abstract `setRelation` with the
-  reference.
+- `MapperRegistryTest`: точный поиск; подъём по суперклассам (зарегистрировано для `Base`,
+  экземпляр `Sub extends Base` находится); апдейтер идёт и по цепочке назначения; интерфейсы
+  не рассматриваются; дубль пары падает с обоими именами; промах бросает
+  `MappingNotFoundException` с направлением; `MapperSource` разворачивается; два источника с одной
+  сущностью и разными DTO сосуществуют.
+- `AbsMapperTest`: обработка null во всех трёх `map*`; `map(from, into)` делегирует `Updater` и
+  возвращает `into`; supplier реестра вызывается один раз.
+- `AbsFlexMapConfigTest`: отдаёт ровно три адаптера с объявленными классами плюс по одному на
+  запись `patches()`; результат `toEntity` с id `0` возвращается с `null` id.
+- `AbsMapDtoToEntityNullifyZeroIdTest`: переписанный существующий тест на новой базе.
+- `AbsMappingCheckerTest`: сообщает все недостающие пары одним исключением; пропускает проверку,
+  когда выключен; `isRunning` равен false после неудачного старта.
+- `AbsGenericCrudConfigurationTest`: три бина существуют, бина ModelMapper нет, `AbsMapper`
+  создаётся раньше реестра.
+- `AbsFlexServiceRUDPatchTest`: `patch` запускает те же хуки, что и `update`; отсутствие `Updater`
+  всплывает как `MappingNotFoundException`; `changeEntity` применяет изменение, сохраняет,
+  запускает after-хуки и пропускает before-хуки с DTO.
+- `AbsMapperExtRelationTest`: `map(extId, dto)` зовёт абстрактный `setRelation` со ссылкой.
 
-## pom, docs, version
+## pom, документация, версия
 
-- `library/pom.xml`: drop `org.modelmapper:modelmapper`.
-- Version: `mise exec -- mvn -q versions:set -DnewVersion=15.0 -DgenerateBackupPoms=false`,
-  commit `chore: start 15.0` (cycle rename, nothing released as 14.1).
-- README: features list drops ModelMapper; Step 4 shows the explicit `AbsFlexMapConfig`; new
-  section "Migration to 15.0 (explicit mappers)" with a table old → new, the PATCH options
-  (`patch(dto)` + `patches()`, `changeEntity`), the `AbsCrudCustomizer` flag rename, and a note
-  that consumers on 13.3.15 apply the flex-only table and this one in one pass.
-- CHANGELOG `## Не выпущено`: the change, in Russian, following the 14.0 entry style.
-- CLAUDE.md: one line — mapping is explicit through the registry; no ModelMapper, no reflection
-  in mapping.
+- `library/pom.xml`: убрать `org.modelmapper:modelmapper`.
+- Версия: `mise exec -- mvn -q versions:set -DnewVersion=15.0 -DgenerateBackupPoms=false`,
+  коммит `chore: start 15.0` (переименование цикла, как 14.1 ничего не выпущено).
+- README: из списка возможностей уходит ModelMapper; шаг 4 показывает явный `AbsFlexMapConfig`;
+  новый раздел «Миграция на 15.0 (явные мапперы)» с таблицей «было → стало», вариантами PATCH
+  (`patch(dto)` + `patches()`, `changeEntity`), переименованием флага `AbsCrudCustomizer` и
+  замечанием, что потребители на 13.3.15 применяют таблицу flex-only и эту за один проход.
+- CHANGELOG, `## Не выпущено`: описание изменения по-русски в стиле записи 14.0.
+- CLAUDE.md: одна строка — маппинг только явный, через реестр; никакого ModelMapper и рефлексии
+  в маппинге.
 
-## Execution: 4 commits, each `./mvnw -B verify` green
+## Выполнение: 4 коммита, каждый зелёный на `./mvnw -B verify`
 
-1. `chore: start 15.0` — version only.
-2. `feat(mapper): explicit Mapper/Updater registry` — additive: `Mapper`, `Updater`,
-   `MapperSource`, `MapperRegistry`, `Patches`, `MappingNotFoundException` and their unit tests.
-   ModelMapper still present; nothing uses the registry yet.
-3. `feat!: replace ModelMapper with explicit mappers` — `AbsMapper`, `AbsFlexMapConfig`, the
-   rewritten bases, `AbsMappingChecker`, configuration, services (`patch`, `changeEntity`, typed
-   `mapEntity`), all deletions incl. the dependency, test-application migration and the new ITs.
-   One commit because the old `AbsMapEntityToDto` / `AbsMapUpdateDtoToEntity` names are reused
-   in the same package and test-application cannot compile against both.
+1. `chore: start 15.0` — только версия.
+2. `feat(mapper): explicit Mapper/Updater registry` — аддитивно: `Mapper`, `Updater`,
+   `MapperSource`, `MapperRegistry`, `Patches`, `MappingNotFoundException` и их юнит-тесты.
+   ModelMapper ещё на месте; реестром пока никто не пользуется.
+3. `feat!: replace ModelMapper with explicit mappers` — `AbsMapper`, `AbsFlexMapConfig`,
+   переписанные базы, `AbsMappingChecker`, конфигурация, сервисы (`patch`, `changeEntity`,
+   типизированный `mapEntity`), все удаления включая зависимость, миграция test-application и
+   новые IT. Одним коммитом, потому что старые имена `AbsMapEntityToDto` / `AbsMapUpdateDtoToEntity`
+   переиспользуются в том же пакете, и test-application не может компилироваться против обоих.
 4. `docs: README, CHANGELOG and CLAUDE.md for explicit mappers`.
 
-## Verification
+## Проверка
 
-- `./mvnw -B verify` green after every commit (unit + failsafe ITs).
-- `grep -ri modelmapper library/src test-application/src library/pom.xml` → empty.
-- `grep -rn "FieldUtils\|java.lang.reflect" library/src/main/java/by/nhorushko/crudgeneric/flex` → empty.
-- `grep -rn "updatePartial\|FieldCopyUtil\|RegisterableMapper\|AbsModelMapper" library/src test-application/src` → empty.
+- `./mvnw -B verify` зелёный после каждого коммита (юнит + failsafe IT).
+- `grep -ri modelmapper library/src test-application/src library/pom.xml` → пусто.
+- `grep -rn "FieldUtils\|java.lang.reflect" library/src/main/java/by/nhorushko/crudgeneric/flex` → пусто.
+- `grep -rn "updatePartial\|FieldCopyUtil\|RegisterableMapper\|AbsModelMapper" library/src test-application/src` → пусто.
 
-## Out of scope
+## Вне задачи
 
-- Migrating LocatorServer and bi-dvr (separate effort per consumer, enabled by the README tables).
-- Checker coverage for `AbsFlexPagingAndSortingService` (its `toDto` may be overridden, so a
-  missing pair there is not necessarily an error).
-- Any change in `filterspecification`, `pageable`, controllers, or the `commons-lang3` dependency.
+- Миграция самих LocatorServer и bi-dvr (отдельная работа на каждого потребителя, опирается на
+  таблицы в README).
+- Покрытие чекером `AbsFlexPagingAndSortingService` (его `toDto` может быть переопределён,
+  поэтому отсутствие пары там не обязательно ошибка).
+- Любые изменения в `filterspecification`, `pageable`, контроллерах и зависимости `commons-lang3`.
