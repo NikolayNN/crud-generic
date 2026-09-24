@@ -5,6 +5,52 @@
 
 ## Не выпущено
 
+### Маппинг: только явный, ModelMapper удалён
+- Зависимость `org.modelmapper:modelmapper` удалена. Каждое преобразование DTO ↔ entity —
+  явный код потребителя, который `MapperRegistry` находит по точной паре классов. Ничего не
+  копируется по совпадению имён полей.
+- Новые типы в `by.nhorushko.crudgeneric.flex.mapper`: `Mapper` / `Updater` (с фабриками
+  `Mapper.of` / `Updater.of`), `MapperSource`, `MapperRegistry`, `Patches` и `AbsFlexMapConfig`
+  с тремя абстрактными методами `toEntity` / `updateEntity` / `toReadDto` и необязательным
+  `patches()`. Одиночные базы `AbsMapEntityToDto`, `AbsMapDtoToEntity`,
+  `AbsMapUpdateDtoToEntity` — по одному абстрактному методу.
+- Фасад `AbsModelMapper` переименован в `AbsMapper`: `map`, `mapAll`, `reference`,
+  `referenceById` не меняются, in-place форма называется `update(source, target)`,
+  `getModelMapper()` удалён.
+- Пары ищутся только по точному ключу, без подъёма по суперклассам и интерфейсам; JPA-прокси
+  приводятся к ближайшему `@Entity`-предку. Промах — `MappingNotFoundException` при вызове.
+- Ошибки регистрации ломают старт и называют бины по имени и классу: дубль пары, `null` в
+  `fromClass()` / `toClass()`, пара для наследника сущности без `@Entity` (при поиске он
+  считается прокси, и такую пару нельзя было бы найти). Реестр собирается на старте и при
+  `spring.main.lazy-initialization=true`.
+- `AbsMapperExtRelation` переехал в `flex.mapper`; `setRelation` стал абстрактным, рефлексивный
+  поиск поля удалён.
+- Удалены `AbsFlexMapConfigDefault`, `AbsFlexMapConfigAbstract`, `AbsMapBasic`,
+  `AbsMapBaseDtoToEntity`, `AbsMapCreateDtoToEntity`, `mapper.core.AbsMapDtoToEntity`,
+  `RegisterableMapper`, стартовый чекер `AbsTypeMapChecker`, `AbsCrudCustomizer`,
+  `AbsMapperEagerInitPostProcessor` и `FieldCopyUtil`.
+
+### Сервисы
+- `updatePartial(id, partial)` заменён на `patch(id, body)`: форма вызова та же, но каждое
+  тело получает явный `Updater`, объявленный в `patches()` конфига. Для изменений в коде —
+  `changeEntity(id, change)`.
+- Все пути записи идут через швы `loadForUpdate(id)` и `saveUpdated(entity)`: переопределять
+  `update` ради `saveAndFlush` или fetch join больше не нужно.
+- `patch` отвергает собственные read, update и create DTO сервиса (`IllegalArgumentException`
+  до хуков): update DTO через `patch` прошёл бы мимо `checkId` и `beforeUpdateHook`.
+- `beforeUpdateHook` типизирован `UPDATE_DTO` и вызывается только из `update`; у `patch` свой
+  `beforePatchHook(id, body)`. `AbsUpdateChangesHookable.beforeUpdateHook` принимает `current`
+  как `Object`, а снимок `previous` берётся из строки, которую вернул `loadForUpdate`: проверка в
+  `loadForUpdate` срабатывает раньше этого хука, строка читается один раз.
+- `mapEntity` / `mapAllEntities` переехали из `AbsFlexServiceRUD` в `AbsFlexServiceCRUD` и
+  типизированы `CREATE_DTO`.
+- Библиотека больше не задаёт семантику null: `null` в DTO очищает поле, только если
+  `updateEntity` или `patches()` так написаны. Раньше null не очищал поле ни на одном пути.
+
+### Миграция
+- Потребители на `13.3.15-jakarta` переходят на 15.0 одним шагом, минуя 14.0. Таблица «было →
+  стало» по API 13.3.15 — в README, раздел «Миграция на 15.0 (явные мапперы)».
+
 ## 14.0
 
 ### Публикация

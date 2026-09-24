@@ -1,10 +1,10 @@
 # Generic CRUD Framework for Spring Boot
 
-The Generic CRUD Framework simplifies the development of Spring Boot applications by providing a structured approach to mapping Data Transfer Objects (DTOs) to entities and implementing CRUD operations. Leveraging the power of ModelMapper and abstract classes, it streamlines the creation of services and controllers with minimal boilerplate code.
+The Generic CRUD Framework simplifies the development of Spring Boot applications by providing a structured approach to mapping Data Transfer Objects (DTOs) to entities and implementing CRUD operations. Mapping is explicit: every conversion is code you write, found by a registry through the exact pair of classes — nothing is copied by matching field names.
 
 ## Features
-* Simplified DTO to Entity mappings and vice versa.
-* Abstract configurations for easy mapping between DTOs and entities.
+* Explicit DTO to entity mappings and vice versa: one config per entity, no implicit field copying.
+* A mapper registry that fails loudly on a missing or duplicate pair of classes.
 * Extended support for CRUD operations on entities with direct and related entities.
 * Predefined hooks for custom business logic before and after CRUD operations.
 * Ready-Made CRUD Services and Controllers: Enables quick generation of fully functional CRUD services and controllers with minimal coding required. This feature allows developers to focus on business logic and application-specific requirements by leveraging generic patterns and practices for common CRUD operations.
@@ -15,7 +15,6 @@ The Generic CRUD Framework simplifies the development of Spring Boot application
 
 * JDK 25+
 * Spring Boot 3.5+
-* ModelMapper
 
 ### Installation via Maven
 
@@ -51,7 +50,7 @@ for reading public packages**, so a token is needed once per machine and per CI 
     <dependency>
         <groupId>by.nhorushko</groupId>
         <artifactId>crud-abstract-generic</artifactId>
-        <version>14.0</version>
+        <version>15.0</version>
     </dependency>
 </dependencies>
 ```
@@ -68,7 +67,7 @@ Released versions are listed at https://github.com/NikolayNN/crud-generic/packag
 ## Usage Guide
 
 ### Step 1: Enable the Generic CRUD Framework
-Before diving into the specifics of entity and DTO creation, enable the framework in your Spring Boot application by using the @EnableAbsGenericCrud annotation. This step is crucial as it sets up the necessary configurations for ModelMapper and other components required by the framework.
+Before diving into the specifics of entity and DTO creation, enable the framework in your Spring Boot application by using the @EnableAbsGenericCrud annotation. It registers the mapper registry and the `AbsMapper` facade the services map through.
 
 Add @EnableAbsGenericCrud to your Spring Boot application's main class or any configuration class:
 
@@ -113,22 +112,45 @@ public class MyUpdateDto implements AbsUpdateDto<Long> {
 ```
 
 ### Step 4: Implement Mapping Configurations
-Extend AbsFlexMapConfigDefault in your configuration to set up mappings. Override createReadDtoFromEntity to construct the read DTO; override the mapSpecificFields* hooks only when a mapping needs custom logic.
+Extend `AbsFlexMapConfig` — one config per entity. Every field is written explicitly; nothing is copied by matching names. Declare one `Updater` per PATCH body class in `patches()`.
 
 ```java
 @Component
-public class MyMappingConfig extends AbsFlexMapConfigDefault<MyCreateDto, MyUpdateDto, MyReadDto, MyEntity> {
+public class MyMappingConfig extends AbsFlexMapConfig<MyCreateDto, MyUpdateDto, MyReadDto, MyEntity> {
 
-    public MyMappingConfig(AbsModelMapper mapper) {
+    public MyMappingConfig(AbsMapper mapper) {
         super(mapper, MyCreateDto.class, MyUpdateDto.class, MyReadDto.class, MyEntity.class);
     }
 
     @Override
-    protected MyReadDto createReadDtoFromEntity(AbsModelMapper mapper, MyEntity entity) {
+    protected MyEntity toEntity(MyCreateDto dto) {
+        MyEntity entity = new MyEntity();
+        entity.setName(dto.getName());
+        if (dto.getItems() != null) { // mapAll(null) is null: decide what a null list means
+            entity.setItems(mapper.mapAll(dto.getItems(), MyItemEntity.class)); // nested children: explicit
+        }
+        return entity;
+    }
+
+    @Override
+    protected void updateEntity(MyUpdateDto dto, MyEntity entity) {
+        entity.setName(dto.getName());
+    }
+
+    @Override
+    protected MyReadDto toReadDto(MyEntity entity) {
         return new MyReadDto(entity.getId(), entity.getName());
+    }
+
+    @Override
+    protected void patches(Patches<MyEntity> p) {
+        p.add(MyNamePatch.class, (patch, entity) -> entity.setName(patch.name()));
     }
 }
 ```
+
+For a single direction use `AbsMapEntityToDto` (view DTOs, read-only services), `AbsMapDtoToEntity` (nested children) or `AbsMapUpdateDtoToEntity`; for a one-off pair declare a bean `Mapper.of(From.class, To.class, fn)`. A missing pair fails with `MappingNotFoundException` on the first call; a pair registered twice fails at startup.
+
 ### Step 5: Create Services
 Extend AbsFlexServiceCRUD or AbsFlexServiceExtCRUD for CRUD services. Implement abstract methods and use the provided functionalities.
 
@@ -138,6 +160,8 @@ public class MyEntityService extends AbsFlexServiceCRUD<Long, MyEntity, MyReadDt
     // Constructor and methods
 }
 ```
+
+`update(dto)`, `patch(id, body)` and the protected `changeEntity(id, change)` all load the entity through `loadForUpdate(id)` and store it through `saveUpdated(entity)` — override those two seams instead of `update`.
 
 ### Step 6: Develop Controllers
 Extend AbsFlexControllerCRUD or AbsFlexControllerExtCRUD for CRUD operations in your controller.
@@ -150,6 +174,172 @@ public class MyEntityController extends AbsFlexControllerCRUD<Long, MyReadDto, M
 }
 
 ```
+
+## Миграция на 15.0 (явные мапперы)
+
+15.0 удаляет ModelMapper. Каждое преобразование DTO ↔ entity — код потребителя, который
+`MapperRegistry` находит по точной паре классов. Ничего не копируется по совпадению имён
+полей, и `null` сам по себе ничего не значит.
+
+**Порядок для потребителя на `13.3.15-jakarta`:** сначала хвост v1/v2 переводится на flex на
+той же 13.3.15 (таблица «Migration to 5.0 (flex-only)» ниже), затем 13.3.15 → 15.0 одним шагом
+по таблице этого раздела. **Через 14.0 не ходить:** там `updatePartial` неявно кладёт read DTO
+на managed-сущность, и через этот путь пошли бы все PATCH. Окно без компиляции сокращается
+подготовкой на 13.3.15: переопределить `setRelation` во всех наследниках `AbsMapperExtRelation`
+(метод там уже protected) и сделать явными поля, которые сегодня копируются по имени.
+
+Таблица составлена по API 13.3.15, на котором сидят потребители, а не по 14.0.
+
+### Было (13.3.15) → стало (15.0)
+
+| 13.3.15 | 15.0 |
+|---|---|
+| `AbsModelMapper` | `AbsMapper`, тот же пакет `by.nhorushko.crudgeneric.flex`. `map(x, Y.class)`, `mapAll`, `reference`, `referenceById`, `getEntityManager()` не меняются — меняется тип параметра конструкторов |
+| `AbsModelMapper.getModelMapper()` | удалён; каждое прямое обращение к ModelMapper становится `Mapper` / `Updater` |
+| in-place `map(source, destination)` — только в 14.x; в 13.3.15 — `getModelMapper().map(source, destination)` | `update(source, destination)` через зарегистрированный `Updater`; `null`-приёмник — `NullPointerException` (14.x возвращал `null`) |
+| `AbsFlexMapConfigDefault`, `AbsFlexMapConfigAbstract` | `AbsFlexMapConfig`: `toEntity`, `updateEntity`, `toReadDto` и необязательный `patches(p)` |
+| фабрика `mapperCreateDtoToEntity(...)` + `mapSpecificFieldsCreateDtoToEntity(mapper, dto, entity)` поверх неявного копирования | `toEntity(dto)`: `new Entity()` + те же строки + поля, которые раньше копировались по имени, включая `id`, если он нужен (assigned id, sentinel `0`) |
+| фабрика `mapperUpdateDtoToEntity(...)` + `mapSpecificFieldsUpdateDtoToEntity` | `updateEntity(dto, entity)` на managed-сущности |
+| `AbsMapUpdateDtoToPresetEntity` из `mapperUpdateDtoToEntity(...)` | `updateEntity(dto, entity)`; фабрика исчезает |
+| `handleAfterMapSpecificFields(source, received)`: `entityManager.find` + перенос полей | загрузка — `loadForUpdate(id)` сервиса (по умолчанию `findById`; переопределяется ради fetch join или фильтра), перенос — тело `updateEntity` |
+| `mergeActualAndReceived(actual, received)` | то же тело в `updateEntity`, только источник — DTO, а не `received`; отсоединённой копии больше нет |
+| `mapperReadDtoToEntity(...)`, `AbsMapDtoToPresetEntity` для read DTO, `mapSpecificFieldsReadDtoToEntity` | удалены; тела PATCH — `patches()`, связь из read DTO — `mapper.reference(dto, Entity.class)` |
+| `mapperEntityToReadDto(...)` + `createReadDtoFromEntity(mapper, entity)` | `toReadDto(entity)`; маппер доступен полем `mapper` |
+| `mapperEntityToEntity(...)` (self-map, движок `mergeActualAndReceived` по умолчанию) | удалён без замены |
+| `AbsMapBasic`, `AbsMapBaseDtoToEntity`, `AbsMapCreateDtoToEntity`, `mapper.core.AbsMapDtoToEntity` + `mapSpecificFields` / `handleAfterMapSpecificFields` | `AbsMapDtoToEntity` (`flex.mapper`): `create(dto)`; `map()` = `create()` + `nullifyZeroId()` |
+| `AbsMapEntityToDto` | то же имя и тот же `create(entity)`; внутренности ModelMapper удалены |
+| `AbsMapUpdateDtoToEntity` + `mapSpecificFields` | то же имя, абстрактный `update(dto, entity)` |
+| `customizeTypeMap(TypeMap)`, `RegisterableMapper` | бин `Mapper.of(From.class, To.class, fn)` или своя реализация `Mapper` / `Updater` |
+| `mapper.mapper.AbsMapperExtRelation`, `setRelation` по умолчанию ищет поле рефлексией | `mapper.AbsMapperExtRelation`, `setRelation(target, relation)` абстрактный |
+| `updatePartial(id, partial)`, `IGNORE_PARTIAL_UPDATE_PROPERTIES`, `FieldCopyUtil` | `patch(id, body)` + `Updater` на каждый partial-класс в `patches()` конфига; изменения в коде — `changeEntity(id, change)` |
+| переопределённый `update(dto)` с `mapEntity(dto)` ради `saveAndFlush` или своей загрузки | швы `saveUpdated(entity)` / `loadForUpdate(id)` |
+| `mapEntity(Object)`, `mapAllEntities(Collection<?>)` в `AbsFlexServiceRUD` | `mapEntity(CREATE_DTO)`, `mapAllEntities(Collection<CREATE_DTO>)` в `AbsFlexServiceCRUD` |
+| `beforeUpdateHook(AbstractDto<ID>)`, звался и из `updatePartial` | `beforeUpdateHook(UPDATE_DTO)` — только из `update`; у `patch` свой `beforePatchHook(id, body)` |
+| `AbsUpdateChangesHookable.beforeUpdateHook(previous, AbstractDto<ID> current)` | `current` — `Object`: update DTO или тело патча |
+| `AbsTypeMapChecker`, `AbsCrudCustomizer` (`typeMapCheckerEnabled`, `eagerTypeMapRegistration`), `AbsMapperEagerInitPostProcessor` | удалены, см. «Стартового чекера нет» |
+| бин `absGenericCrudModelMapper`, свой `@Primary ModelMapper` | не нужны; зависимость `org.modelmapper:modelmapper` из библиотеки убрана — если приложение само пользуется ModelMapper, объявите её у себя |
+
+### Preset-маппер → `updateEntity`
+
+```java
+// 13.3.15: маппер сам находит строку и переносит поля с отсоединённой копии
+@Override
+protected AbsMapBasic<MyUpdateDto, MyEntity> mapperUpdateDtoToEntity(
+        AbsModelMapper mapper, Class<MyUpdateDto> updateDtoClass, Class<MyEntity> entityClass) {
+    return new AbsMapUpdateDtoToPresetEntity<>(mapper, updateDtoClass, entityClass) {
+        @Override
+        protected MyEntity mergeActualAndReceived(MyEntity actual, MyEntity received) {
+            actual.setName(received.getName());
+            actual.setDescription(received.getDescription());
+            return actual;
+        }
+    };
+}
+
+// 15.0: строку загружает сервис (loadForUpdate), конфиг пишет только поля запроса
+@Override
+protected void updateEntity(MyUpdateDto dto, MyEntity entity) {
+    entity.setName(dto.getName());
+    entity.setDescription(dto.getDescription());
+}
+```
+
+### PATCH
+
+```java
+// 13.3.15
+service.updatePartial(id, new PartialName(name));
+
+// 15.0: тот же вызов под новым именем, partial-класс остаётся…
+service.patch(id, new PartialName(name));
+
+// …плюс Updater на каждый partial-класс в конфиге сущности
+@Override
+protected void patches(Patches<MyEntity> p) {
+    p.add(PartialName.class, (body, entity) -> entity.setName(body.getName()));
+}
+
+// Изменение, которое пишет код, а не тело запроса
+public MyReadDto archive(Long id) {
+    return changeEntity(id, entity -> entity.setArchivedAt(Instant.now()));
+}
+```
+
+Тело без зарегистрированного `Updater` — `MappingNotFoundException`, ничего не сохраняется.
+Собственные read, update и create DTO сервиса телом патча быть не могут: `patch` отвергает их
+`IllegalArgumentException` до хуков. Для update DTO — `update(dto)`.
+
+### Швы записи
+
+```java
+// 13.3.15: update переопределён целиком ради saveAndFlush
+@Override
+public MyReadDto update(MyUpdateDto dto) {
+    return mapReadDto(repository.saveAndFlush(mapEntity(dto)));
+}
+
+// 15.0: только шов, и он работает для update, patch и changeEntity
+@Override
+protected MyEntity saveUpdated(MyEntity entity) {
+    return repository.saveAndFlush(entity); // значения, посчитанные базой, попадают в ответ
+}
+```
+
+### Правила
+
+- **Null.** Библиотека null не трактует. `toEntity`, `updateEntity` и `patches()` пишут ровно
+  то, что написано: `e.setName(dto.getName())` очищает поле, `if (dto.getName() != null)
+  e.setName(dto.getName())` сохраняет. До 15.0 null не очищал поле ни на одном пути записи
+  (`skipNull` у `update`, пропуск при маппинге в сущность у `updatePartial`), поэтому при
+  переносе каждого update DTO и partial-класса решение «не трогать» или «очистить»
+  принимается на каждое поле. Фасад особо обрабатывает только null-источник:
+  `map(null, X.class)` → `null`, `update(null, target)` → `target` без изменений.
+- **Точный ключ.** Реестр ищет пару только по точным классам: ни суперклассы, ни интерфейсы
+  не рассматриваются. Для иерархии DTO нужна пара на каждый конкретный класс: в LocatorServer —
+  `StepAddress` / `StepWarehouse` / `StepTransit` (пара на абстрактный `Step` не нужна:
+  экземпляра с таким runtime-классом не бывает); в цепочках
+  `Carrier extends CarrierUpdate extends CarrierCreate` (так же Skill и Warehouse) каждый класс
+  получает свою пару — маппер `CarrierCreate` не подхватит `CarrierUpdate`. Единственное
+  исключение — JPA-прокси: класс без `@Entity` с `@Entity`-предком приводится к ближайшему
+  такому предку. Поэтому и написанный руками наследник сущности без `@Entity` маппится парой
+  сущности, а пару для него самого зарегистрировать нельзя — это ошибка старта. Ленивая ссылка на полиморфную сущность — прокси объявленного базового класса;
+  чтобы маппить её по конкретному наследнику, сначала `Hibernate.unproxy(...)`.
+- **Иерархии сущностей (`@Inheritance`).** Правило точного ключа действует и на сущности:
+  runtime-класс загруженной строки — конкретный `@Entity`-наследник, и у него свой ключ.
+  `Mapper<StepEntity, Step>` не подхватит загруженный `StepAddressEntity`: нужна пара на каждый
+  конкретный класс сущности — `Mapper.of(StepAddressEntity.class, Step.class, …)`, так же для
+  `StepWarehouseEntity` и `StepTransitEntity`, и `Updater` на каждый, если его обновляют (то же
+  для наследников `JobHistoryEntity`). `AbsFlexMapConfig` с одним `ENTITY` и `AbsFlexServiceRUD`
+  на абстрактной базе такие иерархии не покрывают. Ленивая ссылка `@ManyToOne StepEntity` —
+  прокси объявленного базового класса, он приводится к `StepEntity`: либо сначала
+  `Hibernate.unproxy(...)`, и тогда сработает пара конкретного класса, либо зарегистрируйте пару
+  базового класса, если маппинг обходится его полями.
+- **Связь из read DTO — через `reference`.** `map(driverDto, DriverEntity.class)` ради связи
+  заменяется на `mapper.reference(driverDto, DriverEntity.class)`: `getReference` по id без
+  копирования полей. Пары read DTO → entity в 15.0 нет.
+- **Read DTO не делит изменяемое состояние с сущностью.** `previous` в
+  `AbsUpdateChangesHookable.afterUpdateHook` маппится из управляемой сущности до изменения, без
+  глубокой копии. Если `toReadDto` / `create` отдаёт её коллекцию, `Date` или embeddable, а
+  изменение правит их на месте (`getLines().clear(); addAll(...)`), снимок «до» совпадёт с «после».
+  Копируйте: `List.copyOf(...)`, `mapper.mapAll(...)` в DTO детей, `Instant` вместо `Date`.
+- **Не маппить в конструкторах и `@PostConstruct`.** Первый `map()` собирает реестр, а сборка
+  создаёт все бины-мапперы. Если это случится при создании бина, от которого зависит хотя бы
+  один маппер, Spring бросит `BeanCurrentlyInCreationException`. Прогревы кэшей — в
+  `ApplicationReadyEvent` или `SmartLifecycle`.
+- **Проверки на все пути записи — в `loadForUpdate`.** `beforeUpdateHook(UPDATE_DTO)`
+  вызывается только из `update`; `patch` зовёт `beforePatchHook(id, body)`, `changeEntity` —
+  ни тот, ни другой. В 13.3.15 `updatePartial` проходил через `beforeUpdateHook`. Запрет,
+  который должен закрывать все пути (например, правка глобального навыка в
+  `LogisticSkillService`), переносится в переопределённый `loadForUpdate`.
+- **Стартового чекера нет.** `AbsTypeMapChecker`, `AbsCrudCustomizer` и
+  `AbsMapperEagerInitPostProcessor` удалены: пара без маппера всплывает
+  `MappingNotFoundException` при первом вызове с направлением и обоими классами, дубль пары
+  ломает старт. Тесты, которые выключали чекер бином `AbsCrudCustomizer`, просто теряют эту
+  конфигурацию; мокать flex-сервисы можно без оговорок. Нужна проверка состава пар на старте —
+  свой `SmartLifecycle` поверх публичных `MapperRegistry.findMapper` / `findUpdater`.
+- **AOP на `updatePartial`.** Pointcut'ы на `updatePartial` после переезда молча перестанут
+  срабатывать (в LocatorServer — `TrackerCertificateExpireCacheAspect`): перенацельте их на
+  `patch`.
 
 ## Migration to 5.0 (flex-only)
 
@@ -203,7 +393,7 @@ mapper-based one suffices:
 public class RtRoutePageableService
         extends AbsFlexPagingAndSortingService<Long, RtRoute, RtRouteEntity> {
 
-    public RtRoutePageableService(RtRouteRepository repository, AbsModelMapper mapper) {
+    public RtRoutePageableService(RtRouteRepository repository, AbsMapper mapper) {
         super(repository, mapper, RtRoute.class);
     }
 
