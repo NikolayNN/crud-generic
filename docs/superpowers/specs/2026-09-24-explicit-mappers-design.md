@@ -191,6 +191,15 @@ public final class Patches<ENTITY> {
 
 Все конструкторы принимают первым `AbsMapper`, затем классы пары, как сегодня.
 
+Что использует сервис каждого вида (заглушек нигде нет; промежуточный уровень конфига
+«update + read» решено не вводить, хватает одиночных классов):
+
+| Сервис | Пары, которые требует чекер | Классы потребителя |
+|---|---|---|
+| `AbsFlexServiceR`, `AbsFlexPagingAndSortingService` | `Mapper<ENTITY, READ_DTO>` | один `AbsMapEntityToDto` (как `MeetingMapper` в демо) |
+| `AbsFlexServiceRUD` без create DTO | + `Updater<UPDATE_DTO, ENTITY>` | `AbsMapEntityToDto` + `AbsMapUpdateDtoToEntity`; тела PATCH — отдельными `AbsMapUpdateDtoToEntity` или бинами `Updater.of` |
+| `AbsFlexServiceRUD` с create через ext-маппер, `AbsFlexServiceCRUD`, `AbsFlexServiceExtCRUD` | + `Mapper<CREATE_DTO, ENTITY>` | один `AbsFlexMapConfig` |
+
 Пример (test-application, `OrderMapConfig`):
 
 ```java
