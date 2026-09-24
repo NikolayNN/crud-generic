@@ -1,7 +1,7 @@
 # Явные мапперы вместо ModelMapper — дизайн
 
 **Дата:** 2026-09-24
-**Статус:** утверждён; ревизия после ревью 2026-09-24 (решения 2 и 7–9, швы записи, точный ключ, стартовый чекер удалён)
+**Статус:** утверждён; ревизия после ревью 2026-09-24 (решения 2 и 7–9, швы записи, точный ключ, стартовый чекер удалён, `update(source, target)`, семантика null); ревизия 2026-09-29 после второго ревью (снимок hookable после `loadForUpdate`, отказ `patch` от собственных DTO, регистрация наследника сущности без `@Entity`, имена бинов в ошибках реестра, `@Lazy(false)` реестра, `null` в `setRelation` не передаётся)
 
 ## Контекст
 
@@ -71,8 +71,10 @@
    `AbsFlexMapConfig` на сущность с тремя абстрактными методами. Для CRUD-тройки потребитель
    интерфейсы напрямую не реализует; view-DTO и детей закрывают базовые классы с одним
    абстрактным методом.
-5. **Фасад переименован** `AbsModelMapper` → `AbsMapper`. Сигнатуры методов сохраняются, поэтому
-   60 прямых вызовов в LocatorServer не меняются, меняется только тип параметра конструктора.
+5. **Фасад переименован** `AbsModelMapper` → `AbsMapper`. `map(from, To.class)` и `mapAll`
+   сохраняются, поэтому 60 прямых вызовов в LocatorServer не меняются, меняется только тип
+   параметра конструктора. In-place форма получает своё имя, `update(source, target)`: у
+   потребителей её никто не зовёт.
 6. **Версия 15.0.** Цикл 14.1 пуст (`## Не выпущено` пустой), поэтому первый коммит
    переименовывает цикл: `chore: start 15.0`.
 7. **Стартового чекера пар нет.** `AbsTypeMapChecker` видел только три пары каждого сервиса,
@@ -136,10 +138,15 @@ public interface MapperSource {
 - Собирается один раз из всех бинов `Mapper`, `Updater` и `MapperSource`; `MapperSource`
   разворачиваются. После сборки неизменяем, кроме кэша поиска.
 - Две карты с ключом `(fromClass, toClass)`. Повторная регистрация пары ломает сборку
-  `IllegalStateException` с указанием пары и обеих реализаций. Маппер или апдейтер, у которого
-  `fromClass()` или `toClass()` вернул null, пропускается с WARN и именем класса: у настоящих
-  баз классы — final-поля конструктора, null даёт только Mockito-мок бина в тесте потребителя.
-  Сегодня таких моков в потребителях нет.
+  `IllegalStateException` с указанием пары и обеих реализаций. Реализация описывается именем бина
+  и классом (`bean 'zeroIdMapper' (…Mapper$1)`): Spring передаёт мапперы в реестр как
+  `Map<имя бина, бин>`, потому что все бины `Mapper.of` — анонимный `Mapper$1`, а два бина могут
+  быть одного класса. Конструктор с коллекциями (тесты, ручная сборка) описывает реализацию только
+  классом. Маппер или апдейтер, у которого
+  `fromClass()` или `toClass()` вернул null, ломает сборку той же `IllegalStateException` с
+  именем класса: некорректная регистрация — ошибка сразу, без специальных правил ради моков.
+  У настоящих баз классы — final-поля конструктора; null даёт только Mockito-мок бина, таких
+  моков в потребителях нет, а если понадобится, `fromClass()` / `toClass()` в моке стабятся явно.
 - **Поиск — только по точному ключу.** Ни подъёма по суперклассам, ни просмотра интерфейсов:
   в LocatorServer `Carrier extends CarrierUpdate extends CarrierCreate` (так же Skill и
   Warehouse), четыре read DTO наследуют `*Short`, всего 71 DTO наследует другой DTO. Подъём по
@@ -151,7 +158,9 @@ public interface MapperSource {
   сущности без аннотации. `@Entity`-наследник `@Entity`-класса не нормализуется, у него свой
   ключ. Правило одно для источника (`mapper`, `updater`) и для назначения (`updater`, где
   назначение — существующий экземпляр). `jakarta.persistence-api` в библиотеке уже есть
-  (`provided`).
+  (`provided`). Поэтому написанный руками наследник сущности без `@Entity` для реестра — тоже
+  прокси: пару для него найти нельзя, и её регистрация ломает сборку реестра
+  `IllegalStateException` с именем класса и его `@Entity`-предка, а не оставляет мёртвый ключ.
 - Нормализация кэшируется по runtime-классу в `ConcurrentHashMap`; сами пары — обычный
   `HashMap`, заполненный при сборке.
 - Промах бросает `MappingNotFoundException` (`flex.exception`, наследует `RuntimeException`)
@@ -174,7 +183,7 @@ public class AbsMapper {
     public AbsMapper(Supplier<MapperRegistry> registry, EntityManager entityManager); // Spring, лениво
 
     public <T> T map(Object source, Class<T> destinationType);   // null source → null
-    public <T> T map(Object source, T destination);              // null source → destination без изменений; через Updater
+    public <T> T update(Object source, T destination);           // null source → destination без изменений; через Updater
     public <T> List<T> mapAll(Collection<?> source, Class<T> destinationType); // null → null
     public <T extends AbstractEntity<?>> T reference(AbstractDto<?> dto, Class<T> entityClass);
     public <T extends AbstractEntity<?>> T referenceById(Object id, Class<T> entityClass);
@@ -182,7 +191,11 @@ public class AbsMapper {
 }
 ```
 
-`getModelMapper()` исчезает. `mapAll` возвращает новый `ArrayList`, а не неизменяемый список:
+`getModelMapper()` исчезает. In-place форма называется `update(source, target)`, а не вторым
+`map`: разделение `Mapper` / `Updater` видно и вызывающему коду, а перегрузка `map(Object, T)`
+рядом с `map(Object, Class<T>)` — ловушка. Цена нулевая: в LocatorServer in-place форму никто
+не зовёт (единственный кандидат в `RtRunOneOffService` — многострочный `map(dto, Класс.class)`),
+в библиотеке её использует один `runUpdate`. `mapAll` возвращает новый `ArrayList`, а не неизменяемый список:
 результат уходит в коллекции сущностей (`setLines`), которыми дальше управляет Hibernate;
 `Stream.toList()` для этого не годится. Реестр получается из supplier при первом обращении и
 запоминается.
@@ -203,16 +216,19 @@ public class AbsMapper {
 
 | Бин | Зависит от | Примечание |
 |---|---|---|
-| `MapperRegistry` | `List<Mapper<?,?>>`, `List<Updater<?,?>>`, `List<MapperSource>` | Spring создаёт все бины-мапперы, чтобы удовлетворить инъекцию, lazy-init или нет. |
+| `MapperRegistry` | `Map<String, Mapper<?,?>>`, `Map<String, Updater<?,?>>`, `Map<String, MapperSource>` (ключ — имя бина) | Spring создаёт все бины-мапперы, чтобы удовлетворить инъекцию, lazy-init или нет. Имена бинов попадают в сообщения об ошибках сборки реестра. |
 | `AbsMapper` | `ObjectProvider<MapperRegistry>`, `EntityManager` | `new AbsMapper(provider::getObject, em)`. |
 
 Два бина вместо четырёх: `AbsTypeMapChecker`, `AbsCrudCustomizer` и
 `AbsMapperEagerInitPostProcessor` удаляются. Почему без них можно: регистрация перестала быть
 побочным эффектом конструктора, реестр вытягивает все бины-мапперы через инъекцию в конструктор.
-`MapperRegistry` — обычный singleton: без lazy-init Spring создаёт его и все мапперы на старте;
-при `spring.main.lazy-initialization=true` — при первом `map()`, и он всё равно видит все
-определения бинов. Пустой список мапперов в параметрах `@Bean`-метода допустим: Spring
-подставляет пустую коллекцию. Тесты потребителя, которые сегодня выключают чекер через
+`MapperRegistry` — singleton с `@Lazy(false)`: Spring создаёт его и все мапперы на старте всегда,
+в том числе при `spring.main.lazy-initialization=true` (явный флаг Spring Boot не перезаписывает).
+Иначе при lazy-init реестр собирался бы на первом `map()`, и дубль пары или сломанный маппер
+всплыл бы 500-й ошибкой на каждом запросе, а не ошибкой старта. Цена — под lazy-init бины-мапперы
+и их зависимости создаются на старте; так было и в 13.3.15/14.x (`AbsMapperEagerInitPostProcessor`).
+`AbsMapper` по-прежнему берёт реестр через `ObjectProvider`, поэтому цикла бинов нет. Пустая `Map` мапперов в параметрах `@Bean`-метода допустима: Spring
+подставляет пустую `Map`. Тесты потребителя, которые сегодня выключают чекер через
 `AbsCrudCustomizer` (пять в LocatorServer), просто теряют эту конфигурацию; мокать flex-сервисы
 можно без оговорок.
 
@@ -301,7 +317,9 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
     @Override protected OrderEntity toEntity(OrderCreateDto dto) {
         OrderEntity e = new OrderEntity();
         e.setName(dto.getName());
-        e.setLines(mapper.mapAll(dto.getLines(), OrderLineEntity.class)); // вложенные дети: явно
+        if (dto.getLines() != null) { // mapAll(null) — null: пустая коллекция сущности остаётся
+            e.setLines(mapper.mapAll(dto.getLines(), OrderLineEntity.class)); // вложенные дети: явно
+        }
         return e;
     }
     @Override protected void updateEntity(OrderUpdateDto dto, OrderEntity e) { e.setName(dto.getName()); }
@@ -324,12 +342,16 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
     посчитанная базой площадь попала в ответ, `RetranslatorService` — чтобы получить сохранённую
     сущность для `syncWithDbAndLog`). Оба сегодня переопределяют `update` целиком через
     `mapEntity(dto)`, который уходит.
-  - **Конвейер** для `update` и `patch`: before-хук → hookable `beforeUpdateHook(previous, body)`
-    (если сервис реализует `AbsUpdateChangesHookable`; `previous = getById(id)`) →
-    `entity = loadForUpdate(id)` → `mapper.map(body, entity)` → `saveUpdated(entity)` →
+  - **Конвейер** для `update` и `patch`: before-хук → `entity = loadForUpdate(id)` → hookable
+    `beforeUpdateHook(previous, body)` (если сервис реализует `AbsUpdateChangesHookable`;
+    `previous = mapReadDto(entity)` — снимок той строки, что вернул `loadForUpdate`, как в
+    `changeEntity`) → `mapper.update(body, entity)` → `saveUpdated(entity)` →
     `current = mapReadDto` → `afterUpdateHook(current)` → hookable `afterUpdateHook(previous, current)`.
+    Снимок берётся после `loadForUpdate`, а не отдельным `getById`: проверка в `loadForUpdate`
+    срабатывает раньше hookable-хука, и тот не видит строку, которую она отвергла бы, и не
+    успевает выполнить побочные действия.
   - `update(UPDATE_DTO dto)` по сигнатуре не меняется: `checkId(dto)`, `beforeUpdateHook(dto)`,
-    конвейер с `id = dto.getId()`; `mapper.map(dto, entity)` находит `Updater<UPDATE_DTO, ENTITY>`.
+    конвейер с `id = dto.getId()`; `mapper.update(dto, entity)` находит `Updater<UPDATE_DTO, ENTITY>`.
     Хук `beforeUpdateHook` типизируется `UPDATE_DTO` вместо `AbstractDto<ENTITY_ID>`. В
     LocatorServer его переопределяют `EcoDrivingCriterionService`, `LogisticSkillService` и
     `NotificationSourceService`; правка у них — тип параметра, все три и так проверяют
@@ -340,9 +362,14 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
   - **Новый** `public READ_DTO patch(ENTITY_ID id, Object body)`: та же форма вызова, что у
     `updatePartial(id, partial)`, поэтому у потребителя меняется только имя метода, а
     partial-классы остаются. `requireNonNull(id)` и `requireNonNull(body)` (иначе
-    `map(null, entity)` вернул бы сущность без изменений, и `patch` тихо сохранил бы её), новый
-    хук `beforePatchHook(ENTITY_ID id, Object body)`, конвейер; `mapper.map(body, entity)` ищет `Updater<body.getClass(), ENTITY>`,
-    объявленный в `patches()`; иначе `MappingNotFoundException`.
+    `update(null, entity)` вернул бы сущность без изменений, и `patch` тихо сохранил бы её), новый
+    хук `beforePatchHook(ENTITY_ID id, Object body)`, конвейер; `mapper.update(body, entity)` ищет `Updater<body.getClass(), ENTITY>`,
+    объявленный в `patches()`; иначе `MappingNotFoundException`. Собственные read, update и create
+    DTO сервиса телом патча не бывают (точный класс, как ключ реестра): `patch` отвергает их
+    `IllegalArgumentException` до хуков и загрузки строки. Без этого update DTO нашёл бы свой
+    `Updater` и прошёл бы мимо `checkId` и `beforeUpdateHook`, а id в теле никто бы не сверил с id
+    из пути. Класс create DTO `AbsFlexServiceRUD` получает от CRUD / ExtCRUD через защищённый
+    конструктор; публичные конструкторы не меняются.
   - **Новый** `protected READ_DTO changeEntity(ENTITY_ID id, Consumer<ENTITY> change)`:
     `loadForUpdate(id)`; если сервис реализует `AbsUpdateChangesHookable`, снять
     `previous = mapReadDto(entity)` до изменения; применить `change`; `saveUpdated`;
@@ -360,12 +387,30 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
   Реализации в потребителях, `DriverService` и `UserService`, `current` не используют.
   `afterUpdateHook(previous, current)` без изменений.
 
+### Семантика null
+
+Сегодня null не очищает поле ни на одном пути записи: у `update` ModelMapper с `skipNull=true`
+пропускает null-поля DTO; у `updatePartial` `FieldCopyUtil` копирует null на read DTO, а пропуск
+случается на следующем шаге, при маппинге на сущность. Поставить полю null через API нельзя.
+
+В 15.0 библиотека null не трактует. `toEntity`, `updateEntity` и `patches()` пишут ровно то,
+что написано: `e.setName(dto.getName())` очищает поле, `if (dto.getName() != null)
+e.setName(dto.getName())` сохраняет. Фасад оставляет прежнее поведение только для
+null-источника: `map(null, X.class)` → null, `update(null, into)` → `into` без изменений.
+
+Для потребителя это значит: при переносе каждого update DTO и partial-класса решение «null
+значит не трогать» или «null значит очистить» принимается для каждого поля и записывается в
+`updateEntity` / `patches()`. Это отдельный пункт гайда миграции. В демо `OrderMapConfig.updateEntity`
+пишет `name` как есть, и тест в `FlexUpdateIT` фиксирует, что null в update DTO очищает поле —
+как иллюстрация правила, а не как рекомендация.
+
 ### Поведение при ошибках
 
 | Ситуация | Исключение | Когда |
 |---|---|---|
 | Пары нет в реестре | `MappingNotFoundException` (направление + оба FQCN) | при вызове |
-| Одна пара зарегистрирована дважды | `IllegalStateException` (пара + обе реализации) | сборка реестра |
+| Одна пара зарегистрирована дважды | `IllegalStateException` (пара + оба бина: имя и класс) | сборка реестра |
+| Пара для класса без `@Entity` с `@Entity`-предком | `IllegalStateException` (класс + предок) | сборка реестра |
 
 ## Удаляется
 
@@ -420,7 +465,8 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   `patches()` `OrderMapConfig`; приватный `NamePatch` удаляется, проверка та же — поле, которого
   нет в теле, не трогается. Остальные четыре теста класса (`update` применяет поля DTO, не
   трогает отсутствующие в DTO поля и детей, бросает `AppNotFoundException` без сущности)
-  остаются как есть: вместе они заменяют `AbsModelMapperInPlaceMapTest`.
+  остаются как есть: вместе они заменяют `AbsModelMapperInPlaceMapTest`. Новый тест: null в
+  поле update DTO очищает поле, потому что так написан `updateEntity` демо (см. «Семантика null»).
 - Все остальные IT (`FlexSaveCascadeIT`, `FlexDeleteIT`, `FlexExtSaveIT`, `FlexAssignedIdSaveIT`,
   `MeetingPage*IT`) остаются как есть. То, что они остаются зелёными, и есть доказательство,
   что поведение сервисов не изменилось.
@@ -431,24 +477,32 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   даёт `MappingNotFoundException` (никакого подъёма); класс без `@Entity` с `@Entity`-предком
   (модель Hibernate-прокси) нормализуется до предка и для источника, и для назначения
   `updater`; `@Entity`-наследник `@Entity`-класса не нормализуется; интерфейсы не
-  рассматриваются; дубль пары падает с обоими именами; маппер с null-классами пропускается с
-  WARN; промах бросает `MappingNotFoundException` с направлением; `MapperSource`
-  разворачивается; два источника с одной сущностью и разными DTO сосуществуют.
-- `AbsMapperTest`: обработка null во всех трёх `map*`; `map(from, into)` делегирует `Updater` и
-  возвращает `into`; `mapAll` возвращает изменяемый список; supplier реестра вызывается один раз.
+  рассматриваются; дубль пары падает с обоими именами; маппер с null-классами ломает сборку с
+  именем класса; пара для наследника сущности без `@Entity` (источник маппера или назначение
+  апдейтера) ломает сборку; промах бросает `MappingNotFoundException` с направлением; `MapperSource`
+  разворачивается; два источника с одной сущностью и разными DTO сосуществуют; дубль между
+  именованными бинами называет оба имени.
+- `AbsMapperTest`: обработка null-источника в `map`, `update` и `mapAll`; `update(from, into)`
+  делегирует `Updater` и возвращает `into`; `mapAll` возвращает изменяемый список; supplier
+  реестра вызывается один раз.
 - `AbsFlexMapConfigTest`: отдаёт ровно три адаптера с объявленными классами плюс по одному на
   запись `patches()`; `patches()` не вызывается в конструкторе; результат `toEntity` с id `0`
   возвращается с `null` id.
 - `AbsMapDtoToEntityNullifyZeroIdTest`: переписанный существующий тест на новой базе.
 - `AbsGenericCrudConfigurationTest`: `MapperRegistry` и `AbsMapper` существуют, бинов
-  ModelMapper, чекера и кастомайзера нет, `AbsMapper` создаётся раньше реестра; контекст без
-  единого маппера стартует (Spring подставляет пустые коллекции в параметры `@Bean`-метода).
+  ModelMapper, чекера и кастомайзера нет; бины-мапперы, внедряющие `AbsMapper`, не образуют цикла
+  с реестром; под lazy-init (как в Spring Boot: ленивыми становятся бины без явного флага) реестр
+  и мапперы собираются на старте, а дубль пары роняет старт; контекст без
+  единого маппера стартует (Spring подставляет пустые `Map` в параметры `@Bean`-метода);
+  два бина `Mapper.of` на одну пару роняют старт с именами обоих бинов.
 - `AbsFlexServiceRUDPatchTest`: `patch(id, body)` запускает `beforePatchHook`, hookable-хуки и
   `afterUpdateHook`; `patch(id, null)` бросает `NullPointerException`, а не сохраняет молча;
   отсутствие `Updater` всплывает как `MappingNotFoundException`;
   `changeEntity` применяет изменение, сохраняет, запускает after-хуки и пропускает before-хуки
   с телом; `loadForUpdate` и `saveUpdated` вызываются на всех трёх путях, `loadForUpdate`
-  без сущности даёт `AppNotFoundException`.
+  без сущности даёт `AppNotFoundException`; проверка в `loadForUpdate` срабатывает на `update` и
+  `patch` раньше hookable `beforeUpdateHook`, и строка читается один раз; `patch` отвергает
+  собственные read, update и create DTO сервиса, а наследника update DTO — нет (точный класс).
 - `AbsMapperExtRelationTest`: `map(extId, dto)` зовёт абстрактный `setRelation` со ссылкой.
 
 ## pom, документация, версия
@@ -469,8 +523,9 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   `@PostConstruct`», правилом «проверки на все пути записи — в `loadForUpdate`, а не в
   `beforeUpdateHook`», правилом точного ключа — пара на каждый конкретный класс (в
   LocatorServer: `StepAddress` / `StepWarehouse` / `StepTransit`, цепочки Carrier / Skill /
-  Warehouse), правилом «связь из read DTO — через `reference`, а не `map(readDto, Entity.class)`»
-  и предупреждением про
+  Warehouse), правилом «связь из read DTO — через `reference`, а не `map(readDto, Entity.class)`»,
+  правилом семантики null (библиотека null не трактует; «не трогать» или «очистить» выбирается
+  на каждое поле) и предупреждением про
   AOP-pointcut'ы на `updatePartial` (`TrackerCertificateExpireCacheAspect` в LocatorServer
   сломается молча). Порядок для потребителя на 13.3.15: хвост v1/v2 → flex на 13.3.15 по
   таблице flex-only, затем 13.3.15 → 15.0 одним шагом по этой таблице, минуя 14.0.
