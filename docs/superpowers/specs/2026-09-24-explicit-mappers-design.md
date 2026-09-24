@@ -136,7 +136,10 @@ public interface MapperSource {
 - Собирается один раз из всех бинов `Mapper`, `Updater` и `MapperSource`; `MapperSource`
   разворачиваются. После сборки неизменяем, кроме кэша поиска.
 - Две карты с ключом `(fromClass, toClass)`. Повторная регистрация пары ломает сборку
-  `IllegalStateException` с указанием пары и обеих реализаций.
+  `IllegalStateException` с указанием пары и обеих реализаций. Маппер или апдейтер, у которого
+  `fromClass()` или `toClass()` вернул null, пропускается с WARN и именем класса: у настоящих
+  баз классы — final-поля конструктора, null даёт только Mockito-мок бина в тесте потребителя.
+  Сегодня таких моков в потребителях нет.
 - **Поиск — только по точному ключу.** Ни подъёма по суперклассам, ни просмотра интерфейсов:
   в LocatorServer `Carrier extends CarrierUpdate extends CarrierCreate` (так же Skill и
   Warehouse), четыре read DTO наследуют `*Short`, всего 71 DTO наследует другой DTO. Подъём по
@@ -179,7 +182,10 @@ public class AbsMapper {
 }
 ```
 
-`getModelMapper()` исчезает. Реестр получается из supplier при первом обращении и запоминается.
+`getModelMapper()` исчезает. `mapAll` возвращает новый `ArrayList`, а не неизменяемый список:
+результат уходит в коллекции сущностей (`setLines`), которыми дальше управляет Hibernate;
+`Stream.toList()` для этого не годится. Реестр получается из supplier при первом обращении и
+запоминается.
 Именно это рвёт цикл бинов *бин-маппер → AbsMapper → MapperRegistry → все бины-мапперы*:
 `AbsMapper` не трогает реестр при создании, поэтому мапперы продолжают инжектить `AbsMapper`
 в конструктор ровно так, как сегодня инжектят `AbsModelMapper`.
@@ -237,8 +243,10 @@ public final class Patches<ENTITY> {
 `mappers()` возвращает `Mapper<CREATE_DTO, ENTITY>` (оборачивает `toEntity`, затем зовёт
 `entity.nullifyZeroId()` на результате) и `Mapper<ENTITY, READ_DTO>` (оборачивает `toReadDto`).
 `updaters()` возвращает `Updater<UPDATE_DTO, ENTITY>` (оборачивает `updateEntity`) плюс по одному
-`Updater` на каждую запись `patches()`. Нормализация «id 0 значит новый» остаётся: это
-документированное правило библиотеки, а не неявное сопоставление.
+`Updater` на каждую запись `patches()`. `patches()` вызывается из `updaters()`, а не из
+конструктора: переопределяемый метод в конструкторе отработал бы до инициализации полей
+наследника. Нормализация «id 0 значит новый» остаётся: это документированное правило
+библиотеки, а не неявное сопоставление.
 
 Одиночные базы, у каждой один абстрактный метод:
 
@@ -331,8 +339,9 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
     ровно такой случай, и он же убирает лишний `findById` из хука.
   - **Новый** `public READ_DTO patch(ENTITY_ID id, Object body)`: та же форма вызова, что у
     `updatePartial(id, partial)`, поэтому у потребителя меняется только имя метода, а
-    partial-классы остаются. `requireNonNull(id)`, новый хук `beforePatchHook(ENTITY_ID id,
-    Object body)`, конвейер; `mapper.map(body, entity)` ищет `Updater<body.getClass(), ENTITY>`,
+    partial-классы остаются. `requireNonNull(id)` и `requireNonNull(body)` (иначе
+    `map(null, entity)` вернул бы сущность без изменений, и `patch` тихо сохранил бы её), новый
+    хук `beforePatchHook(ENTITY_ID id, Object body)`, конвейер; `mapper.map(body, entity)` ищет `Updater<body.getClass(), ENTITY>`,
     объявленный в `patches()`; иначе `MappingNotFoundException`.
   - **Новый** `protected READ_DTO changeEntity(ENTITY_ID id, Consumer<ENTITY> change)`:
     `loadForUpdate(id)`; если сервис реализует `AbsUpdateChangesHookable`, снять
@@ -344,8 +353,8 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
 - `AbsFlexServiceCRUD`: **новые** `protected ENTITY mapEntity(CREATE_DTO)` и
   `protected List<ENTITY> mapAllEntities(Collection<CREATE_DTO>)` (типизированы, переехали сюда
   из RUD). `save` / `saveAll` / `persistOrMerge` без изменений.
-- `AbsFlexServiceExtCRUD`, `AbsFlexPagingAndSortingService`, все `AbsFlexController*`: только тип
-  `AbsMapper`.
+- `AbsFlexServiceExtCRUD`, `AbsFlexPagingAndSortingService`: только тип `AbsMapper`. Контроллеры
+  `AbsFlexController*` маппер не принимают и не меняются.
 - `AbsUpdateChangesHookable.beforeUpdateHook(READ_DTO previous, Object current)`: `current`
   ослабляется с `AbstractDto<ENTITY_ID>` до `Object`, потому что тело патча id не несёт.
   Реализации в потребителях, `DriverService` и `UserService`, `current` не используют.
@@ -372,6 +381,10 @@ Main библиотеки: `AbsModelMapper`, `mapper.core.AbsMapBasic`, `mapper.
 `AbsCrudCustomizerTest`, `AbsCrudCustomizerEagerFlagTest`, `AbsTypeMapCheckerTest`,
 `AbsMapBasicRegistrationTest`, `AbsFlexMapConfigSharedEntityTest`,
 `AbsMapBaseDtoToEntityNullifyZeroIdTest` (последний переписывается под новым именем, см. ниже).
+Переписываются под `AbsMapper` вместо мока `AbsModelMapper`: `AbsFlexServiceExtCRUDTest`,
+`AbsFlexServiceRUDDeleteTest`. Javadoc с упоминанием ModelMapper в `EnableAbsGenericCrud`,
+`AbsFlexPagingAndSortingService`, `AbsFlexServiceR` / `RUD` / `CRUD` / `ExtCRUD` переписывается:
+иначе проверочный grep их найдёт.
 
 test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста), `util/FieldCopyUtilTest`.
 
@@ -379,7 +392,11 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
 
 - `OrderMapConfig`, `RegionMapConfig`, `TaskMapConfig` → `AbsFlexMapConfig` с явными
   `toEntity` / `updateEntity` / `toReadDto`; Order маппит `lines` через `mapper.mapAll` и
-  объявляет `OrderNamePatch` в `patches()`.
+  объявляет `OrderNamePatch` в `patches()`. `toEntity` у Region и Task **обязан копировать
+  `id` из create DTO**: Region — assigned id и upsert (`FlexAssignedIdSaveIT` вставляет по
+  `42L`, потом обновляет по нему же), Task — sentinel `0` и отказ ext-пути от реального id
+  (`FlexExtSaveIT`). Нормализацию `0 → null` делает обёртка конфига, копирование — явная строка
+  `e.setId(dto.getId())` в `toEntity`. Если эти IT покраснели, чинится конфиг, а не тесты.
 - `OrderLineMapConfig` → `OrderLineMapper extends AbsMapDtoToEntity` (только create-направление;
   ни один IT не маппит `OrderLineEntity` обратно в `OrderLineDto`, поэтому read-направление
   не регистрируется).
@@ -414,19 +431,21 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   даёт `MappingNotFoundException` (никакого подъёма); класс без `@Entity` с `@Entity`-предком
   (модель Hibernate-прокси) нормализуется до предка и для источника, и для назначения
   `updater`; `@Entity`-наследник `@Entity`-класса не нормализуется; интерфейсы не
-  рассматриваются; дубль пары падает с обоими именами; промах бросает
-  `MappingNotFoundException` с направлением; `MapperSource` разворачивается; два источника с одной
-  сущностью и разными DTO сосуществуют.
+  рассматриваются; дубль пары падает с обоими именами; маппер с null-классами пропускается с
+  WARN; промах бросает `MappingNotFoundException` с направлением; `MapperSource`
+  разворачивается; два источника с одной сущностью и разными DTO сосуществуют.
 - `AbsMapperTest`: обработка null во всех трёх `map*`; `map(from, into)` делегирует `Updater` и
-  возвращает `into`; supplier реестра вызывается один раз.
+  возвращает `into`; `mapAll` возвращает изменяемый список; supplier реестра вызывается один раз.
 - `AbsFlexMapConfigTest`: отдаёт ровно три адаптера с объявленными классами плюс по одному на
-  запись `patches()`; результат `toEntity` с id `0` возвращается с `null` id.
+  запись `patches()`; `patches()` не вызывается в конструкторе; результат `toEntity` с id `0`
+  возвращается с `null` id.
 - `AbsMapDtoToEntityNullifyZeroIdTest`: переписанный существующий тест на новой базе.
 - `AbsGenericCrudConfigurationTest`: `MapperRegistry` и `AbsMapper` существуют, бинов
   ModelMapper, чекера и кастомайзера нет, `AbsMapper` создаётся раньше реестра; контекст без
   единого маппера стартует (Spring подставляет пустые коллекции в параметры `@Bean`-метода).
 - `AbsFlexServiceRUDPatchTest`: `patch(id, body)` запускает `beforePatchHook`, hookable-хуки и
-  `afterUpdateHook`; отсутствие `Updater` всплывает как `MappingNotFoundException`;
+  `afterUpdateHook`; `patch(id, null)` бросает `NullPointerException`, а не сохраняет молча;
+  отсутствие `Updater` всплывает как `MappingNotFoundException`;
   `changeEntity` применяет изменение, сохраняет, запускает after-хуки и пропускает before-хуки
   с телом; `loadForUpdate` и `saveUpdated` вызываются на всех трёх путях, `loadForUpdate`
   без сущности даёт `AppNotFoundException`.
