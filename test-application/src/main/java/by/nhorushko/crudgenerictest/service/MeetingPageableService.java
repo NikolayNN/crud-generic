@@ -1,6 +1,6 @@
 package by.nhorushko.crudgenerictest.service;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
 import by.nhorushko.crudgeneric.flex.pageable.AbsFlexPagingAndSortingService;
 import by.nhorushko.crudgeneric.flex.pageable.FilterFields;
 import by.nhorushko.crudgenerictest.domain.dto.MeetingDto;
@@ -14,7 +14,7 @@ import static by.nhorushko.filterspecification.FilterOperation.*;
 @Service
 public class MeetingPageableService extends AbsFlexPagingAndSortingService<Long, MeetingDto, MeetingEntity> {
 
-    public MeetingPageableService(MeetingRepository repository, AbsModelMapper mapper) {
+    public MeetingPageableService(MeetingRepository repository, AbsMapper mapper) {
         super(repository, mapper, MeetingDto.class);
     }
 

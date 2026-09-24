@@ -1,29 +1,42 @@
 package by.nhorushko.crudgeneric.flex.mapper;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
-import by.nhorushko.crudgeneric.flex.mapper.core.AbsMapDtoToEntity;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 
 /**
- * Abstract class for mapping update Data Transfer Objects (DTOs) into existing entity instances.
+ * Base for an explicit update DTO → managed entity updater. Implement {@link #update}.
  * <p>
- * This class extends {@link AbsMapDtoToEntity} specifically for the scenario where DTOs, extending
- * {@link AbstractDto}, contain updates for entities that already exist in the database. It inherits
- * the generic mapping capabilities from {@link AbsMapDtoToEntity} and provides a streamlined foundation
- * for implementing entity-specific update logic in subclasses.
+ * {@link #fromClass()} and {@link #toClass()} are deliberately not final: a CGLIB proxy of the bean
+ * must be able to delegate them to the target.
  * </p>
- * <p>
- * Utilizing this class allows for a clean separation of the mapping logic used for creating new entities
- * from that used for updating existing ones, ensuring that update operations can be handled with
- * specificity and care to maintain data integrity and respect business logic constraints.
- * </p>
- *
- * @param <DTO>    the type of the Data Transfer Object, extending {@link AbstractDto}, used for updating entities
- * @param <ENTITY> the type of the entity, extending {@link AbstractEntity}, that is to be updated from the DTO
  */
-public abstract class AbsMapUpdateDtoToEntity<DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>> extends AbsMapDtoToEntity<DTO, ENTITY> {
-    public AbsMapUpdateDtoToEntity(AbsModelMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
-        super(mapper, dtoClass, entityClass);
+public abstract class AbsMapUpdateDtoToEntity<DTO extends AbstractDto<?>, ENTITY extends AbstractEntity<?>>
+        implements Updater<DTO, ENTITY> {
+
+    protected final AbsMapper mapper;
+    protected final Class<DTO> dtoClass;
+    protected final Class<ENTITY> entityClass;
+
+    public AbsMapUpdateDtoToEntity(AbsMapper mapper, Class<DTO> dtoClass, Class<ENTITY> entityClass) {
+        this.mapper = mapper;
+        this.dtoClass = dtoClass;
+        this.entityClass = entityClass;
     }
+
+    @Override
+    public Class<DTO> fromClass() {
+        return dtoClass;
+    }
+
+    @Override
+    public Class<ENTITY> toClass() {
+        return entityClass;
+    }
+
+    /**
+     * Writes the DTO onto the managed entity. Only what this method writes changes.
+     */
+    @Override
+    public abstract void update(DTO from, ENTITY into);
 }

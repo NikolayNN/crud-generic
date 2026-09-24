@@ -1,6 +1,7 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
+import by.nhorushko.crudgeneric.flex.mapper.MapperRegistry;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
@@ -25,8 +26,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AbsFlexServiceRUDDeleteTest {
 
-    @Mock
-    private AbsModelMapper mapper;
+    private final AbsMapper mapper = new AbsMapper(new MapperRegistry(List.of(), List.of(), List.of()), null);
 
     @Mock
     private JpaRepository<ItemEntity, Long> repository;

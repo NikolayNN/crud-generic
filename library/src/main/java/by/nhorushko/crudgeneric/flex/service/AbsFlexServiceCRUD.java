@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
@@ -54,9 +54,12 @@ public abstract class AbsFlexServiceCRUD<
 
     /**
      * Insert-if-absent / merge-if-present. Restores Hibernate 6.5 merge-of-absent-row semantics
-     * (broken on 6.6). The sentinel id 0 is normalised to {@code null} here — the single chokepoint
-     * every save path funnels through — so application mappers that override {@code toEntity(...)}
-     * and bypass the base converter's normalisation still route a new entity to persist.
+     * (broken on 6.6). The sentinel id 0 is normalised to {@code null} here, the chokepoint that
+     * {@link #save} and {@link #saveAll} of this service funnel through. The library's create
+     * mappers ({@code AbsFlexMapConfig}, {@code AbsMapDtoToEntity}) normalise it themselves, which
+     * also covers nested children and direct {@code mapper.map(...)} calls; this call is the safety
+     * net for a create mapper that skips it (a plain {@code Mapper.of} bean, say), so a new entity
+     * still goes to persist. The ext create path has its own check in {@code AbsFlexServiceExtCRUD}.
      */
     protected ENTITY persistOrMerge(ENTITY entity) {
         entity.nullifyZeroId();
@@ -68,8 +71,8 @@ public abstract class AbsFlexServiceCRUD<
         return repository.save(entity);
     }
 
-    public AbsFlexServiceCRUD(AbsModelMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<CREATE_DTO> createDtoClass) {
-        super(mapper, repository, entityClass, readDtoClass, updateDtoClass);
+    public AbsFlexServiceCRUD(AbsMapper mapper, REPOSITORY repository, Class<ENTITY> entityClass, Class<READ_DTO> readDtoClass, Class<UPDATE_DTO> updateDtoClass, Class<CREATE_DTO> createDtoClass) {
+        super(mapper, repository, entityClass, readDtoClass, updateDtoClass, createDtoClass);
         this.createDtoClass = createDtoClass;
     }
 
@@ -160,5 +163,25 @@ public abstract class AbsFlexServiceCRUD<
      * @param dtos the collection of saved entities represented as READ_DTOs
      */
     protected void afterSaveAllHook(Collection<READ_DTO> dtos) {
+    }
+
+    /**
+     * Maps a create DTO to a new entity with the {@code Mapper<CREATE_DTO, ENTITY>} from the registry.
+     *
+     * @param dto the create DTO
+     * @return the new, not yet persisted entity
+     */
+    protected ENTITY mapEntity(CREATE_DTO dto) {
+        return mapper.map(dto, entityClass);
+    }
+
+    /**
+     * Maps create DTOs to new entities with {@link #mapEntity}'s mapper.
+     *
+     * @param dtos the create DTOs
+     * @return a new mutable list of new, not yet persisted entities
+     */
+    protected List<ENTITY> mapAllEntities(Collection<CREATE_DTO> dtos) {
+        return mapper.mapAll(dtos, entityClass);
     }
 }

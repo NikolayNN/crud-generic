@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
-import by.nhorushko.crudgeneric.flex.mapper.mapper.AbsMapperExtRelation;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
+import by.nhorushko.crudgeneric.flex.mapper.AbsMapperExtRelation;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
@@ -51,14 +51,14 @@ public abstract class AbsFlexServiceExtCRUD<
     protected final Class<CREATE_DTO> createDtoClass;
 
 
-    public AbsFlexServiceExtCRUD(AbsModelMapper mapper,
+    public AbsFlexServiceExtCRUD(AbsMapper mapper,
                                  REPOSITORY repository,
                                  Class<ENTITY> entityClass,
                                  Class<READ_DTO> readDtoClass,
                                  Class<UPDATE_DTO> updateDtoClass,
                                  Class<CREATE_DTO> createDtoClass,
                                  AbsMapperExtRelation<CREATE_DTO, ENTITY, EXT_ID, EXT> extMapper) {
-        super(mapper, repository, entityClass, readDtoClass, updateDtoClass);
+        super(mapper, repository, entityClass, readDtoClass, updateDtoClass, createDtoClass);
         this.extMapper = extMapper;
         this.createDtoClass = createDtoClass;
     }
@@ -78,9 +78,11 @@ public abstract class AbsFlexServiceExtCRUD<
     public READ_DTO save(EXT_ID relationId, CREATE_DTO dto) {
         beforeSaveHook(relationId, dto);
         ENTITY entity = extMapper.map(relationId, dto);
-        // Create-only path: real ids are rejected and the sentinel id 0 is normalised to null,
-        // so Spring Data routes save() to persist (no Hibernate 6.6 merge-of-absent-row) and
-        // persistOrMerge is not needed.
+        // Create-only path: a real id on the mapped entity is rejected, so save() can never merge
+        // into an existing row. Such an id only appears if the create mapper copies it from the DTO;
+        // a mapper that does not copy it creates a new row and the client's id is ignored. The
+        // sentinel id 0 is normalised to null, so Spring Data routes save() to persist (no
+        // Hibernate 6.6 merge-of-absent-row) and persistOrMerge is not needed.
         checkNew(entity);
         entity = repository.save(entity);
         READ_DTO actual = mapReadDto(entity);

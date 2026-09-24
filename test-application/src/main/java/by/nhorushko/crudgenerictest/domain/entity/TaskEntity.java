@@ -5,9 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Child side of the flex ext fixture. Holds exactly one field of type
- * {@link ProjectEntity} — {@code AbsMapperExtRelation} locates the relation
- * field reflectively by that type and rejects zero or multiple matches.
+ * Child side of the flex ext fixture: {@code TaskExtMapper.setRelation} links a new task to
+ * its {@link ProjectEntity}.
  */
 @Entity
 @Table(name = "project_task")

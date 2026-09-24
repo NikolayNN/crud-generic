@@ -1,7 +1,9 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
-import by.nhorushko.crudgeneric.flex.mapper.mapper.AbsMapperExtRelation;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
+import by.nhorushko.crudgeneric.flex.mapper.AbsMapperExtRelation;
+import by.nhorushko.crudgeneric.flex.mapper.Mapper;
+import by.nhorushko.crudgeneric.flex.mapper.MapperRegistry;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
@@ -19,6 +21,8 @@ import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -33,8 +37,9 @@ public class AbsFlexServiceExtCRUDTest {
 
     private static final Long RELATION_ID = 7L;
 
-    @Mock
-    private AbsModelMapper mapper;
+    private final AbsMapper mapper = new AbsMapper(new MapperRegistry(
+            List.of(Mapper.of(ItemEntity.class, ItemDto.class, entity -> new ItemDto(entity.getId(), entity.getName()))),
+            List.of(), List.of()), null);
 
     @Mock
     private JpaRepository<ItemEntity, Long> repository;
@@ -53,6 +58,15 @@ public class AbsFlexServiceExtCRUDTest {
                 dto.setName("hooked");
             }
         };
+    }
+
+    @Test
+    public void patchRejectsTheCreateDtoOfTheService() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> service.patch(1L, new ItemCreate("item")));
+
+        assertTrue(e.getMessage(), e.getMessage().contains(ItemCreate.class.getName() + " is the create DTO"));
+        verify(repository, never()).save(any(ItemEntity.class));
     }
 
     /**
@@ -86,8 +100,6 @@ public class AbsFlexServiceExtCRUDTest {
             idsAtSaveTime.add(entity.getId());
             return entity;
         });
-        when(mapper.map(any(ItemEntity.class), eq(ItemDto.class))).thenReturn(new ItemDto(1L, "hooked"));
-
         service.save(RELATION_ID, new ItemCreate("item"));
 
         assertEquals(singletonList((Long) null), idsAtSaveTime);
@@ -103,8 +115,6 @@ public class AbsFlexServiceExtCRUDTest {
             entities.forEach(entity -> idsAtSaveTime.add(entity.getId()));
             return entities;
         });
-        when(mapper.mapAll(anyCollection(), eq(ItemDto.class))).thenReturn(singletonList(new ItemDto(1L, "hooked")));
-
         service.saveAll(RELATION_ID, singletonList(new ItemCreate("item")));
 
         assertEquals(singletonList((Long) null), idsAtSaveTime);
@@ -123,7 +133,6 @@ public class AbsFlexServiceExtCRUDTest {
             return new ArrayList<>(singletonList(entity(null)));
         });
         when(repository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(mapper.mapAll(anyCollection(), eq(ItemDto.class))).thenReturn(singletonList(new ItemDto(1L, "hooked")));
 
         service.saveAll(RELATION_ID, singletonList(new ItemCreate("original")));
 

@@ -1,6 +1,6 @@
 package by.nhorushko.crudgeneric.flex.pageable;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
 import by.nhorushko.crudgeneric.flex.exception.FilterValidationException;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
@@ -27,13 +27,13 @@ public abstract class AbsFlexPagingAndSortingService<
         ENTITY extends AbstractEntity<ID>> {
 
     protected final JpaSpecificationExecutor<ENTITY> repository;
-    protected final AbsModelMapper mapper;
+    protected final AbsMapper mapper;
     private final Class<DTO> dtoClass;
     private final Converters converters;
     private volatile FilterFields<ENTITY> filterFields;
 
     public AbsFlexPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository,
-                                          AbsModelMapper mapper,
+                                          AbsMapper mapper,
                                           Class<DTO> dtoClass) {
         this(repository, mapper, dtoClass, null);
     }
@@ -44,7 +44,7 @@ public abstract class AbsFlexPagingAndSortingService<
      * application's {@link Converters} subclass.
      */
     public AbsFlexPagingAndSortingService(JpaSpecificationExecutor<ENTITY> repository,
-                                          AbsModelMapper mapper,
+                                          AbsMapper mapper,
                                           Class<DTO> dtoClass,
                                           Converters converters) {
         this.repository = repository;

@@ -1,7 +1,7 @@
 package by.nhorushko.crudgeneric.flex.service;
 
 import by.nhorushko.crudgeneric.flex.exception.AppNotFoundException;
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractEntity;
 import lombok.Getter;
@@ -19,7 +19,7 @@ import static java.lang.String.format;
  * <p>
  * This abstract class is designed to encapsulate common read-only operations for entities, including fetching
  * by ID and checking for existence. It utilizes Spring Data JPA's {@link JpaRepository} for repository operations
- * and leverages a custom {@link AbsModelMapper} for DTO to entity mapping. It is generic and can be used with
+ * and leverages a custom {@link AbsMapper} for DTO to entity mapping. It is generic and can be used with
  * any entity that extends {@link AbstractEntity} and any DTO that extends {@link AbstractDto}.
  * </p>
  * <p>
@@ -44,7 +44,7 @@ public abstract class AbsFlexServiceR<
         READ_DTO extends AbstractDto<ID>,
         REPOSITORY extends JpaRepository<ENTITY, ID>> {
 
-    protected final AbsModelMapper mapper;
+    protected final AbsMapper mapper;
 
     protected final REPOSITORY repository;
 
@@ -54,7 +54,7 @@ public abstract class AbsFlexServiceR<
     @Getter
     protected final Class<READ_DTO> readDtoClass;
 
-    public AbsFlexServiceR(AbsModelMapper mapper,
+    public AbsFlexServiceR(AbsMapper mapper,
                            REPOSITORY repository,
                            Class<ENTITY> entityClass,
                            Class<READ_DTO> readDtoClass) {
@@ -130,7 +130,7 @@ public abstract class AbsFlexServiceR<
      * Maps an entity to its corresponding READ_DTO representation.
      * <p>
      * This protected method is used internally to convert an entity to its corresponding DTO representation.
-     * It leverages the configured {@link AbsModelMapper} for the conversion.
+     * It leverages the configured {@link AbsMapper} for the conversion.
      * </p>
      *
      * @param entity the entity to map

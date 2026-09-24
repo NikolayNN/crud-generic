@@ -1,38 +1,39 @@
 package by.nhorushko.crudgeneric.flex.service;
 
-import by.nhorushko.crudgeneric.flex.model.AbstractDto;
-
 /**
- * Interface that defines hooks for capturing state changes before and after updating an entity.
- * Implementing this interface allows services to perform custom logic right before and after
- * an entity is updated, accessing both the prior and the current state of the entity.
+ * Hooks that see the state of an entity before and after a write. A service that implements this
+ * interface gets them on every write path of {@link AbsFlexServiceRUD}; {@code beforeUpdateHook}
+ * only on the paths that carry a request body ({@code update} and {@code patch}).
+ * <p>
+ * The state before the write is taken from the row {@code loadForUpdate} returned, after it
+ * returned: a check in {@code loadForUpdate} runs first, so these hooks never see a rejected row.
+ * </p>
  *
- * @param <ENTITY_ID> The type of the identifier for the entity.
- * @param <READ_DTO>  The DTO (Data Transfer Object) type used for read operations,
- *                    providing a snapshot of entity data.
+ * @param <ENTITY_ID> the entity id type
+ * @param <READ_DTO>  the read DTO the states are represented as
  */
 public interface AbsUpdateChangesHookable<ENTITY_ID, READ_DTO> {
 
     /**
-     * Hook method called before an entity is updated.
-     * This method provides an opportunity to perform actions or checks before the entity's state
-     * is permanently changed. For example, validations or pre-processing can be performed on
-     * the entity's previous and current states.
+     * Called before the body is applied.
      *
-     * @param previous The previous state of the entity represented as a READ_DTO.
-     * @param current  The current state of the entity as an {@link AbstractDto}, potentially holding
-     *                 updated values not yet persisted.
+     * @param previous the stored state before the write
+     * @param current  the request body about to be applied: the update DTO for {@code update}, the
+     *                 PATCH body for {@code patch}
      */
-    void beforeUpdateHook(READ_DTO previous, AbstractDto<ENTITY_ID> current);
+    void beforeUpdateHook(READ_DTO previous, Object current);
 
     /**
-     * Hook method called after an entity is updated.
-     * This method allows for operations that need to be performed after the entity's state
-     * has been updated and persisted. This could include post-processing, additional validations,
-     * or triggering further dependent actions based on the old and new states.
+     * Called after the write is stored.
+     * <p>
+     * {@code previous} is mapped from the managed entity before the change, not deep-copied. If the
+     * read DTO mapping hands over the entity's mutable objects (a collection, a {@code Date}, an
+     * embeddable), a change made to them in place shows up in {@code previous} too, and a diff finds
+     * nothing: the mapping must copy them.
+     * </p>
      *
-     * @param previous The previous state of the entity represented as a READ_DTO before the update.
-     * @param current  The new state of the entity represented as a READ_DTO after the update.
+     * @param previous the state before the write
+     * @param current  the stored state after the write
      */
     void afterUpdateHook(READ_DTO previous, READ_DTO current);
 }

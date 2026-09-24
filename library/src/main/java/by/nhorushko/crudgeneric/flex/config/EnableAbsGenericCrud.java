@@ -10,16 +10,10 @@ import java.lang.annotation.Target;
 /**
  * Enables the Generic CRUD Framework in a Spring Boot application.
  * <p>
- * When placed on a Spring Boot application's main class or any configuration class,
- * this annotation imports the {@link AbsGenericCrudConfiguration} class into the
- * Spring context. This action configures the necessary beans for ModelMapper, sets up
- * custom DTO to entity mappings, and initializes any additional configurations required
- * by the Generic CRUD Framework.
- * </p>
- * <p>
- * Usage of this annotation allows for quick integration of the framework, enabling
- * developers to leverage simplified DTO to entity mappings, extended CRUD operations,
- * and predefined hooks for custom business logic with minimal manual configuration.
+ * Placed on the application's main class or any configuration class, it imports
+ * {@link AbsGenericCrudConfiguration}, which registers the
+ * {@link by.nhorushko.crudgeneric.flex.mapper.MapperRegistry} built from every mapper bean and the
+ * {@link by.nhorushko.crudgeneric.flex.AbsMapper} facade the services map through.
  * </p>
  * <p>
  * Example usage:
@@ -34,7 +28,7 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  *
- * @see AbsGenericCrudConfiguration for details on the specific beans and configurations provided by the framework.
+ * @see AbsGenericCrudConfiguration
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

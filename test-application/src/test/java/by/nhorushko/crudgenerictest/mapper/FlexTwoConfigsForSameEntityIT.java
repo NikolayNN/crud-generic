@@ -1,7 +1,7 @@
 package by.nhorushko.crudgenerictest.mapper;
 
-import by.nhorushko.crudgeneric.flex.AbsModelMapper;
-import by.nhorushko.crudgeneric.flex.mapper.composite.AbsFlexMapConfigDefault;
+import by.nhorushko.crudgeneric.flex.AbsMapper;
+import by.nhorushko.crudgeneric.flex.mapper.AbsFlexMapConfig;
 import by.nhorushko.crudgeneric.flex.model.AbsCreateDto;
 import by.nhorushko.crudgeneric.flex.model.AbsUpdateDto;
 import by.nhorushko.crudgeneric.flex.model.AbstractDto;
@@ -19,12 +19,11 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Spring startup with TWO {@code AbsFlexMapConfigDefault} beans for the same
- * entity ({@code OrderEntity}): the production {@code OrderMapConfig} plus a
- * second config with its own DTO triple. Registration must not collide — the
- * shared ENTITY->ENTITY self-map is registered once (guarded), and both DTO
- * sets keep working. A dedicated H2 url forks the cached test context so the
- * extra config does not leak into the other integration tests.
+ * Spring startup with TWO {@code AbsFlexMapConfig} beans for the same entity ({@code OrderEntity}):
+ * the production {@code OrderMapConfig} plus a second config with its own DTO triple. They register
+ * different pairs, so the registry builds without a duplicate and both DTO sets keep working. A
+ * dedicated H2 url forks the cached test context so the extra config does not leak into the other
+ * integration tests.
  */
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:twoconfigsdb;NON_KEYWORDS=USER")
 class FlexTwoConfigsForSameEntityIT {
@@ -32,11 +31,23 @@ class FlexTwoConfigsForSameEntityIT {
     @TestConfiguration
     static class SecondOrderConfig {
         @Bean
-        AbsFlexMapConfigDefault<OrderSummaryCreateDto, OrderSummaryUpdateDto, OrderSummaryDto, OrderEntity> orderSummaryMapConfig(AbsModelMapper mapper) {
-            return new AbsFlexMapConfigDefault<>(mapper,
+        AbsFlexMapConfig<OrderSummaryCreateDto, OrderSummaryUpdateDto, OrderSummaryDto, OrderEntity> orderSummaryMapConfig(AbsMapper mapper) {
+            return new AbsFlexMapConfig<>(mapper,
                     OrderSummaryCreateDto.class, OrderSummaryUpdateDto.class, OrderSummaryDto.class, OrderEntity.class) {
                 @Override
-                protected OrderSummaryDto createReadDtoFromEntity(AbsModelMapper mapper, OrderEntity entity) {
+                protected OrderEntity toEntity(OrderSummaryCreateDto dto) {
+                    OrderEntity entity = new OrderEntity();
+                    entity.setName(dto.getName());
+                    return entity;
+                }
+
+                @Override
+                protected void updateEntity(OrderSummaryUpdateDto dto, OrderEntity entity) {
+                    entity.setName(dto.getName());
+                }
+
+                @Override
+                protected OrderSummaryDto toReadDto(OrderEntity entity) {
                     return new OrderSummaryDto(entity.getId(), entity.getName());
                 }
             };
@@ -44,7 +55,7 @@ class FlexTwoConfigsForSameEntityIT {
     }
 
     @Autowired
-    private AbsModelMapper mapper;
+    private AbsMapper mapper;
 
     @Test
     void bothConfigsMapEntityToTheirReadDto() {

@@ -2,6 +2,7 @@ package by.nhorushko.crudgenerictest.service;
 
 import by.nhorushko.crudgeneric.flex.exception.AppNotFoundException;
 import by.nhorushko.crudgenerictest.domain.dto.OrderDto;
+import by.nhorushko.crudgenerictest.domain.dto.OrderNamePatch;
 import by.nhorushko.crudgenerictest.domain.dto.OrderUpdateDto;
 import by.nhorushko.crudgenerictest.domain.entity.OrderEntity;
 import by.nhorushko.crudgenerictest.domain.entity.OrderLineEntity;
@@ -66,15 +67,28 @@ class FlexUpdateIT {
     }
 
     @Test
-    void updatePartialPreservesFieldsAbsentFromPartial() {
+    void patchPreservesFieldsAbsentFromPatchBody() {
         OrderEntity order = persistedOrder("old", "s3cret", "line-1");
 
-        service.updatePartial(order.getId(), new NamePatch("new"));
+        service.patch(order.getId(), new OrderNamePatch("new"));
 
         OrderEntity actual = orderRepository.findById(order.getId()).orElseThrow();
         assertThat(actual.getName()).isEqualTo("new");
         assertThat(actual.getSecretCode()).isEqualTo("s3cret");
         assertThat(lineRepository.count()).isEqualTo(1L);
+    }
+
+    /**
+     * The library gives null no meaning of its own: OrderMapConfig.updateEntity writes the name as
+     * is, so a null in the DTO clears it. This pins the demo's choice, not a recommendation.
+     */
+    @Test
+    void updateWithNullNameClearsItBecauseUpdateEntityWritesItAsIs() {
+        OrderEntity order = persistedOrder("old", "s3cret");
+
+        service.update(new OrderUpdateDto(order.getId(), null));
+
+        assertThat(orderRepository.findById(order.getId()).orElseThrow().getName()).isNull();
     }
 
     @Test
@@ -94,13 +108,5 @@ class FlexUpdateIT {
             order.getLines().add(line);
         }
         return orderRepository.save(order);
-    }
-
-    private static final class NamePatch {
-        private final String name;
-
-        private NamePatch(String name) {
-            this.name = name;
-        }
     }
 }

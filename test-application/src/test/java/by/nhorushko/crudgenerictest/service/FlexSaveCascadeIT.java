@@ -1,8 +1,10 @@
 package by.nhorushko.crudgenerictest.service;
 
+import by.nhorushko.crudgeneric.flex.AbsMapper;
 import by.nhorushko.crudgenerictest.domain.dto.OrderCreateDto;
 import by.nhorushko.crudgenerictest.domain.dto.OrderDto;
 import by.nhorushko.crudgenerictest.domain.dto.OrderLineDto;
+import by.nhorushko.crudgenerictest.domain.entity.OrderEntity;
 import by.nhorushko.crudgenerictest.domain.entity.OrderLineEntity;
 import by.nhorushko.crudgenerictest.repository.OrderLineRepository;
 import by.nhorushko.crudgenerictest.repository.OrderRepository;
@@ -29,6 +31,8 @@ class FlexSaveCascadeIT {
     private OrderRepository orderRepository;
     @Autowired
     private OrderLineRepository lineRepository;
+    @Autowired
+    private AbsMapper mapper;
 
     @AfterEach
     void cleanUp() {
@@ -44,5 +48,16 @@ class FlexSaveCascadeIT {
         OrderLineEntity line = lineRepository.findAll().get(0);
         assertThat(line.getId()).isPositive();
         assertThat(line.getTitle()).isEqualTo("child");
+    }
+
+    /**
+     * mapAll(null) is null by the facade's contract, so the config must choose explicitly what a
+     * null list means: here "no children", keeping the entity's initialised collection.
+     */
+    @Test
+    void createWithNullLinesKeepsAnEmptyCollection() {
+        OrderEntity entity = mapper.map(new OrderCreateDto("order", null), OrderEntity.class);
+
+        assertThat(entity.getLines()).isNotNull().isEmpty();
     }
 }
