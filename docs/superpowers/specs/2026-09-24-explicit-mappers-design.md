@@ -1,7 +1,7 @@
 # Явные мапперы вместо ModelMapper — дизайн
 
 **Дата:** 2026-09-24
-**Статус:** утверждён; ревизия после ревью 2026-09-24 (решения 2 и 7–9, швы записи, пропуск моков)
+**Статус:** утверждён; ревизия после ревью 2026-09-24 (решения 2 и 7–9, швы записи, точный ключ, стартовый чекер удалён)
 
 ## Контекст
 
@@ -21,9 +21,13 @@
   комментариев и объявлений) — контроллеры Unit, User, MechanismMode, Retranslator, TelegramChat,
   UnitGroup и сервисы Unit, Vehicle, Sensor, Warehouse, NotificationSource; 38 PATCH-эндпоинтов
   во flex-контроллерах; тела — partial-классы без id (`PartialName implements PartialNameI`),
-  id из path. Контроллеры библиотеки и bi-dvr его не используют. В комментариях мапперов LocatorServer
-  read DTO → entity описан как опасный на 14.x: неявное копирование положило бы `owner` глубоко
-  поверх managed `UserEntity` и затёрло `areaM2`.
+  id из path. Контроллеры библиотеки и bi-dvr его не используют. Помимо этого read DTO → entity
+  зовут напрямую четыре маппера LocatorServer ради связи — `map(driverDto, DriverEntity.class)`
+  в `RevInfoMapper`, `JobHistoryMapper`, `LogisticRouteMapper`, `TripMapper` — и похожие вызовы
+  для `RtRoute`, `RtSchedule`, `RtRun`, `UserEnabledHistory`. Для связи нужен
+  `mapper.reference(dto, DriverEntity.class)`: `getReference` по id без копирования полей, а не
+  маппер. В комментариях мапперов LocatorServer read DTO → entity описан как опасный на 14.x:
+  неявное копирование положило бы `owner` глубоко поверх managed `UserEntity` и затёрло `areaM2`.
 - **self-map entity → entity** регистрируется «для клонирования»; на HEAD его никто не
   использует, но в 13.3.15 это механизм Preset-мапперов: `AbsMapDtoToPresetEntity` в
   `handleAfterMapSpecificFields` находил сохранённую строку через `entityManager.find` и звал
@@ -55,7 +59,8 @@
 ## Решения, принятые с владельцем
 
 1. **Жёсткий переход.** ModelMapper удаляется из библиотеки. Никакого fallback: пара, которой нет
-   в реестре, — ошибка на старте (чекер) или при вызове.
+   в реестре, — `MappingNotFoundException` при первом вызове с обоими классами и направлением;
+   пара, зарегистрированная дважды, — ошибка сборки реестра на старте.
 2. **`updatePartial` и маппинг read DTO → entity удаляются** вместе с `FieldCopyUtil`
    (копирование полей рефлексией, использовалось только там). Форма вызова сохраняется:
    `patch(ENTITY_ID id, Object body)` принимает те же partial-тела без id, но каждое тело
@@ -70,14 +75,17 @@
    60 прямых вызовов в LocatorServer не меняются, меняется только тип параметра конструктора.
 6. **Версия 15.0.** Цикл 14.1 пуст (`## Не выпущено` пустой), поэтому первый коммит
    переименовывает цикл: `chore: start 15.0`.
-7. **Чекер пропускает сервисы, у которых `getEntityClass()` вернул null** (Mockito-моки в
-   тестах потребителя), с WARN в лог. Отдельного свойства для выключения нет: единственный
-   переключатель — `AbsCrudCustomizer`.
+7. **Стартового чекера пар нет.** `AbsTypeMapChecker` видел только три пары каждого сервиса,
+   а мимо него проходят 60 прямых вызовов `map(x, Y.class)`, до 27 partial-тел, `toDto`
+   paging-сервисов и пары ext-мапперов; ради него в 13.3.15 держали 36 фиктивных TypeMap
+   read DTO → entity. Промах и так громкий и точный при первом вызове, дубли ловит сборка
+   реестра. Вместе с чекером уходят `AbsCrudCustomizer`, его флаг и правило пропуска моков.
+   `MapperRegistry.findMapper` / `findUpdater` публичны: потребитель при желании пишет свой
+   стартовый `SmartLifecycle` с тем составом пар, который важен ему.
 8. **Поиск в реестре — только по точному ключу; единственная нормализация — JPA-прокси до
    ближайшего `@Entity`-предка.** Никакого подъёма по суперклассам и интерфейсам: в
    LocatorServer `Carrier extends CarrierUpdate extends CarrierCreate`, и подъём молча подобрал
-   бы маппер родителя. Для иерархий и интерфейсов — пара на каждый конкретный класс плюс
-   диспетчер на абстрактный тип.
+   бы маппер родителя. Для иерархий и интерфейсов — пара на каждый конкретный класс.
 9. **Путь миграции LocatorServer:** хвост v1/v2 доводится до flex на текущей 13.3.15 (flex-стек
    там уже есть), затем 13.3.15 → 15.0 одним шагом, минуя 14.0. Через 14.0 идти нельзя: там
    `updatePartial` кладёт read DTO на managed-сущность неявно, через этот путь пошли бы все 38
@@ -146,18 +154,14 @@ public interface MapperSource {
 - Промах бросает `MappingNotFoundException` (`flex.exception`, наследует `RuntimeException`)
   с направлением и обоими полными именами классов, например
   `No Updater registered for com.x.OrderUpdateDto -> com.x.OrderEntity`.
-- Варианты `find*` возвращают `Optional` для чекера.
+- Варианты `find*` возвращают `Optional`: для тестов и для стартовой проверки, если потребитель
+  захочет написать свою.
 
 Иерархии DTO — интерфейс с реализациями (sealed + records) или абстрактный класс с
 наследниками (`StepTransit ⊂ StepAddress ⊂ Step` в LocatorServer) в роли `UPDATE_DTO` или
-`CREATE_DTO` — обслуживаются одним правилом: пара на каждый конкретный класс плюс один явный
-диспетчер на абстрактный тип, чтобы чекер нашёл пару сервиса:
-`Updater.of(Step.class, StepEntity.class, (body, e) -> mapper.map(body, e))`. Вызов внутри
-диспетчера ищет по runtime-классу тела, то есть по конкретной реализации, и в сам диспетчер
-не возвращается, потому что экземпляра с runtime-классом `Step` не бывает. Оговорка: диспетчер
-только для абстрактных классов и интерфейсов; для конкретного базового класса (как
-`CarrierUpdate`, у которого есть наследник `Carrier`) регистрируется настоящий маппер, иначе
-диспетчер нашёл бы сам себя. Правило идёт в README.
+`CREATE_DTO` — обслуживаются тем же правилом: пара на каждый конкретный класс. Пара на сам
+абстрактный тип не нужна: экземпляра с runtime-классом `Step` не бывает, и найти её никто не
+смог бы; единственным её потребителем был бы стартовый чекер, которого нет. Правило идёт в README.
 
 ### Фасад `AbsMapper` (заменяет `AbsModelMapper`)
 
@@ -195,26 +199,16 @@ public class AbsMapper {
 |---|---|---|
 | `MapperRegistry` | `List<Mapper<?,?>>`, `List<Updater<?,?>>`, `List<MapperSource>` | Spring создаёт все бины-мапперы, чтобы удовлетворить инъекцию, lazy-init или нет. |
 | `AbsMapper` | `ObjectProvider<MapperRegistry>`, `EntityManager` | `new AbsMapper(provider::getObject, em)`. |
-| `AbsMappingChecker` | `List<? extends AbsFlexServiceR>`, `MapperRegistry`, `AbsCrudCustomizer` | `SmartLifecycle`, фаза `Integer.MAX_VALUE`, заменяет `AbsTypeMapChecker`. |
 
-`AbsMappingChecker.start()` проверяет по каждому сервису: `Mapper<ENTITY, READ_DTO>`; для
-`AbsFlexServiceRUD` ещё `Updater<UPDATE_DTO, ENTITY>`; для `AbsFlexServiceCRUD` и
-`AbsFlexServiceExtCRUD` ещё `Mapper<CREATE_DTO, ENTITY>`. Собирает все недостающие пары и падает
-один раз `IllegalStateException` с их списком (сегодня останавливается на первой). Сервис, у
-которого `getEntityClass()` или `getReadDtoClass()` вернул null, пропускается с WARN и именем
-бина: это Mockito-мок из теста потребителя (у настоящего сервиса классы — final-поля,
-заполненные в конструкторе); в LocatorServer так замоканы `UnitService`, `GeofenceService`,
-`SensorService`, `MileageNormConsumptionService`. `isRunning` выставляется только после
-успешной проверки, как сейчас.
-
-`AbsMapperEagerInitPostProcessor` удаляется. Почему он больше не нужен: регистрация перестала быть
-побочным эффектом конструктора. Реестр вытягивает все бины-мапперы через инъекцию в конструктор.
-Бины `SmartLifecycle` создаются при refresh даже при `spring.main.lazy-initialization=true`,
-поэтому чекер собирает реестр, а тот создаёт все мапперы до `start()`. При выключенном чекере
-реестр собирается при первом `map()` и всё равно видит все определения бинов.
-
-В `AbsCrudCustomizer` остаётся один флаг, `mappingCheckerEnabled` (по умолчанию `true`).
-`typeMapCheckerEnabled` и `eagerTypeMapRegistration` удаляются.
+Два бина вместо четырёх: `AbsTypeMapChecker`, `AbsCrudCustomizer` и
+`AbsMapperEagerInitPostProcessor` удаляются. Почему без них можно: регистрация перестала быть
+побочным эффектом конструктора, реестр вытягивает все бины-мапперы через инъекцию в конструктор.
+`MapperRegistry` — обычный singleton: без lazy-init Spring создаёт его и все мапперы на старте;
+при `spring.main.lazy-initialization=true` — при первом `map()`, и он всё равно видит все
+определения бинов. Пустой список мапперов в параметрах `@Bean`-метода допустим: Spring
+подставляет пустую коллекцию. Тесты потребителя, которые сегодня выключают чекер через
+`AbsCrudCustomizer` (пять в LocatorServer), просто теряют эту конфигурацию; мокать flex-сервисы
+можно без оговорок.
 
 ### Базовые классы для потребителей
 
@@ -260,10 +254,10 @@ public final class Patches<ENTITY> {
 Что использует сервис каждого вида (заглушек нигде нет; промежуточный уровень конфига
 «update + read» решено не вводить, хватает одиночных классов):
 
-| Сервис | Пары, которые требует чекер | Классы потребителя |
+| Сервис | Пары, которые использует базовый класс | Классы потребителя |
 |---|---|---|
 | `AbsFlexServiceR` | `Mapper<ENTITY, READ_DTO>` | один `AbsMapEntityToDto` (как `MeetingMapper` в демо) |
-| `AbsFlexPagingAndSortingService` | чекер не проверяет; `Mapper<ENTITY, DTO>` нужен в рантайме, если `toDto` не переопределён | один `AbsMapEntityToDto` |
+| `AbsFlexPagingAndSortingService` | `Mapper<ENTITY, DTO>`, если `toDto` не переопределён | один `AbsMapEntityToDto` |
 | `AbsFlexServiceRUD` | `Mapper<ENTITY, READ_DTO>` + `Updater<UPDATE_DTO, ENTITY>` | `AbsMapEntityToDto` + `AbsMapUpdateDtoToEntity`; тела PATCH — через `patches()` конфига или бинами `Updater.of`. Если у сущности есть и create DTO (его пару в рантайме использует ext-маппер, как `MechanismModeExtMapper` в LocatorServer), удобнее один `AbsFlexMapConfig` |
 | `AbsFlexServiceCRUD`, `AbsFlexServiceExtCRUD` | + `Mapper<CREATE_DTO, ENTITY>` | один `AbsFlexMapConfig` |
 
@@ -363,7 +357,6 @@ public class OrderMapConfig extends AbsFlexMapConfig<OrderCreateDto, OrderUpdate
 |---|---|---|
 | Пары нет в реестре | `MappingNotFoundException` (направление + оба FQCN) | при вызове |
 | Одна пара зарегистрирована дважды | `IllegalStateException` (пара + обе реализации) | сборка реестра |
-| У сервиса нет его мапперов | `IllegalStateException` со списком всех недостающих пар | старт контекста (`AbsMappingChecker`) |
 
 ## Удаляется
 
@@ -371,13 +364,14 @@ Main библиотеки: `AbsModelMapper`, `mapper.core.AbsMapBasic`, `mapper.
 `mapper.core.AbsMapDtoToEntity` (старый), `mapper.core.RegisterableMapper`,
 `mapper.AbsMapCreateDtoToEntity`, `mapper.composite.AbsFlexMapConfigAbstract`,
 `mapper.composite.AbsFlexMapConfigDefault`, `config.AbsMapperEagerInitPostProcessor`,
-`config.AbsTypeMapChecker`, `util.FieldCopyUtil`. Зависимость `org.modelmapper:modelmapper`
-убирается из `library/pom.xml`. `commons-lang3` остаётся (`filterspecification`, `PageFilterRequest`).
+`config.AbsTypeMapChecker`, `config.AbsCrudCustomizer`, `util.FieldCopyUtil`. Зависимость
+`org.modelmapper:modelmapper` убирается из `library/pom.xml`. `commons-lang3` остаётся
+(`filterspecification`, `PageFilterRequest`).
 
 Тесты библиотеки: `AbsModelMapperInPlaceMapTest`, `AbsMapperEagerInitPostProcessorTest`,
-`AbsCrudCustomizerEagerFlagTest`, `AbsMapBasicRegistrationTest`, `AbsFlexMapConfigSharedEntityTest`,
-`AbsMapBaseDtoToEntityNullifyZeroIdTest`, `AbsTypeMapCheckerTest` (последние два переписываются
-под новыми именами, см. ниже).
+`AbsCrudCustomizerTest`, `AbsCrudCustomizerEagerFlagTest`, `AbsTypeMapCheckerTest`,
+`AbsMapBasicRegistrationTest`, `AbsFlexMapConfigSharedEntityTest`,
+`AbsMapBaseDtoToEntityNullifyZeroIdTest` (последний переписывается под новым именем, см. ниже).
 
 test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста), `util/FieldCopyUtilTest`.
 
@@ -398,7 +392,7 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   падает с `MappingNotFoundException`; переопределённый `saveUpdated` вызывается на всех трёх
   путях записи.
 - Новый IT `MapperRegistryLazyInitIT`: контекст, поднятый с `spring.main.lazy-initialization=true`,
-  содержит в реестре все мапперы демо, и чекер проходит (заменяет `eagerinit/*`).
+  содержит в реестре все мапперы демо (заменяет `eagerinit/*`).
 - `FlexSaveOverridingMapperIT`: переопределение `customizeTypeMap` из ModelMapper становится бином
   `Mapper.of(ZeroIdOrderCreate.class, OrderEntity.class, ...)`, копирующим id `0` как есть;
   проверка (persistOrMerge всё равно вставляет) не меняется.
@@ -428,13 +422,9 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
 - `AbsFlexMapConfigTest`: отдаёт ровно три адаптера с объявленными классами плюс по одному на
   запись `patches()`; результат `toEntity` с id `0` возвращается с `null` id.
 - `AbsMapDtoToEntityNullifyZeroIdTest`: переписанный существующий тест на новой базе.
-- `AbsMappingCheckerTest`: сообщает все недостающие пары одним исключением; пропускает проверку,
-  когда выключен; сервис с null-классами (мок) пропускается с WARN и не ломает старт;
-  `isRunning` равен false после неудачного старта.
-- `AbsGenericCrudConfigurationTest`: три бина существуют, бина ModelMapper нет, `AbsMapper`
-  создаётся раньше реестра; контекст без единого маппера и сервиса стартует (Spring подставляет
-  пустые коллекции в параметры `@Bean`-метода, как сегодня живёт чекер в
-  `DriverMapperConfigTest` LocatorServer).
+- `AbsGenericCrudConfigurationTest`: `MapperRegistry` и `AbsMapper` существуют, бинов
+  ModelMapper, чекера и кастомайзера нет, `AbsMapper` создаётся раньше реестра; контекст без
+  единого маппера стартует (Spring подставляет пустые коллекции в параметры `@Bean`-метода).
 - `AbsFlexServiceRUDPatchTest`: `patch(id, body)` запускает `beforePatchHook`, hookable-хуки и
   `afterUpdateHook`; отсутствие `Updater` всплывает как `MappingNotFoundException`;
   `changeEntity` применяет изменение, сохраняет, запускает after-хуки и пропускает before-хуки
@@ -455,11 +445,13 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   `AbsCrudCustomizer.typeMapCheckerEnabled`), вариантами PATCH
   (`updatePartial(id, partial)` → `patch(id, body)` плюс `Updater` на каждый partial-класс в
   `patches()`; `changeEntity` для замыканий), швами `loadForUpdate` / `saveUpdated` вместо
-  переопределения `update`, переименованием флага `AbsCrudCustomizer`, правилом «не маппить в
-  конструкторах и `@PostConstruct`», правилом «проверки на все пути записи — в `loadForUpdate`,
-  а не в `beforeUpdateHook`», правилом точного ключа с диспетчером для интерфейсных и
-  абстрактных DTO (в LocatorServer: `Logistic.Step`, и пары на каждый класс цепочек
-  Carrier / Skill / Warehouse) и предупреждением про
+  переопределения `update`, удалением стартового чекера и `AbsCrudCustomizer` (тесты, которые
+  его выключали, теряют эту конфигурацию), правилом «не маппить в конструкторах и
+  `@PostConstruct`», правилом «проверки на все пути записи — в `loadForUpdate`, а не в
+  `beforeUpdateHook`», правилом точного ключа — пара на каждый конкретный класс (в
+  LocatorServer: `StepAddress` / `StepWarehouse` / `StepTransit`, цепочки Carrier / Skill /
+  Warehouse), правилом «связь из read DTO — через `reference`, а не `map(readDto, Entity.class)`»
+  и предупреждением про
   AOP-pointcut'ы на `updatePartial` (`TrackerCertificateExpireCacheAspect` в LocatorServer
   сломается молча). Порядок для потребителя на 13.3.15: хвост v1/v2 → flex на 13.3.15 по
   таблице flex-only, затем 13.3.15 → 15.0 одним шагом по этой таблице, минуя 14.0.
@@ -474,7 +466,7 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
    `MapperSource`, `MapperRegistry`, `Patches`, `MappingNotFoundException` и их юнит-тесты.
    ModelMapper ещё на месте; реестром пока никто не пользуется.
 3. `feat!: replace ModelMapper with explicit mappers` — `AbsMapper`, `AbsFlexMapConfig`,
-   переписанные базы, `AbsMappingChecker`, конфигурация, сервисы (`patch`, `changeEntity`,
+   переписанные базы, конфигурация без чекера и кастомайзера, сервисы (`patch`, `changeEntity`,
    типизированный `mapEntity`), все удаления включая зависимость, миграция test-application и
    новые IT. Одним коммитом, потому что старые имена `AbsMapEntityToDto` / `AbsMapUpdateDtoToEntity`
    переиспользуются в том же пакете, и test-application не может компилироваться против обоих.
@@ -485,13 +477,13 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
 - `./mvnw -B verify` зелёный после каждого коммита (юнит + failsafe IT).
 - `grep -ri modelmapper library/src test-application/src library/pom.xml` → пусто.
 - `grep -rn "FieldUtils\|java.lang.reflect" library/src/main/java/by/nhorushko/crudgeneric/flex` → пусто.
-- `grep -rn "updatePartial\|FieldCopyUtil\|RegisterableMapper\|AbsModelMapper" library/src test-application/src` → пусто.
+- `grep -rn "updatePartial\|FieldCopyUtil\|RegisterableMapper\|AbsModelMapper\|AbsTypeMapChecker\|AbsMappingChecker\|AbsCrudCustomizer" library/src test-application/src` → пусто.
 
 ## Вне задачи
 
 - Миграция самих LocatorServer и bi-dvr (отдельная работа на каждого потребителя, опирается на
   таблицы в README). LocatorServer доводит хвост до flex на 13.3.15, затем переходит на 15.0
   одним шагом, минуя 14.0; промежуточного релиза библиотеки не будет.
-- Покрытие чекером `AbsFlexPagingAndSortingService` (его `toDto` может быть переопределён,
-  поэтому отсутствие пары там не обязательно ошибка).
+- Стартовая проверка состава пар на стороне потребителя: при желании пишется им самим поверх
+  `MapperRegistry.findMapper` / `findUpdater`.
 - Любые изменения в `filterspecification`, `pageable`, контроллерах и зависимости `commons-lang3`.
