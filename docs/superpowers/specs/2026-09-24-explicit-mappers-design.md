@@ -404,9 +404,15 @@ test-application: `config/ModelMapperConfig`, `eagerinit/*` (три теста),
   проверка (persistOrMerge всё равно вставляет) не меняется.
 - `FlexTwoConfigsForSameEntityIT`: по смыслу не меняется; два конфига на одну сущность регистрируют
   разные пары и не конфликтуют.
-- Все остальные IT (`FlexSaveCascadeIT`, `FlexUpdateIT`, `FlexDeleteIT`, `FlexExtSaveIT`,
-  `FlexAssignedIdSaveIT`, `MeetingPage*IT`) остаются как есть. То, что они остаются зелёными, и
-  есть доказательство, что поведение сервисов не изменилось.
+- `FlexUpdateIT`: тест `updatePartialPreservesFieldsAbsentFromPartial` переводится на
+  `service.patch(order.getId(), new OrderNamePatch("new"))` с `OrderNamePatch`, объявленным в
+  `patches()` `OrderMapConfig`; приватный `NamePatch` удаляется, проверка та же — поле, которого
+  нет в теле, не трогается. Остальные четыре теста класса (`update` применяет поля DTO, не
+  трогает отсутствующие в DTO поля и детей, бросает `AppNotFoundException` без сущности)
+  остаются как есть: вместе они заменяют `AbsModelMapperInPlaceMapTest`.
+- Все остальные IT (`FlexSaveCascadeIT`, `FlexDeleteIT`, `FlexExtSaveIT`, `FlexAssignedIdSaveIT`,
+  `MeetingPage*IT`) остаются как есть. То, что они остаются зелёными, и есть доказательство,
+  что поведение сервисов не изменилось.
 
 ## Юнит-тесты библиотеки (новые или переписанные)
 
