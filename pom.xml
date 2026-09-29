@@ -6,7 +6,7 @@
 
     <groupId>by.nhorushko</groupId>
     <artifactId>crud-abstract-generic-parent</artifactId>
-    <version>15.0</version>
+    <version>15.1</version>
     <packaging>pom</packaging>
     <name>crud-abstract-generic-parent</name>
 
